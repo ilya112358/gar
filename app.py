@@ -44,5 +44,14 @@ def get_all_file_paths(directory):
 
 directory = 'Data'
 file_paths = get_all_file_paths(directory)
-for path in file_paths:
-    process_data_file(path)
+st.write(f"**{len(file_paths)}** files found in {directory} folder")
+
+option = st.selectbox('**How many files to show?**', ('All', 'Some'))
+match option:
+    case "All":
+       for path in file_paths:
+            process_data_file(path)
+    case "Some":
+        options = st.multiselect('Choose the files', file_paths)
+        for path in options:
+            process_data_file(path)
