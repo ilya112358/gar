@@ -33,25 +33,26 @@ def process_data_file(file_path):
     st.line_chart(df, x='Gait cycle')
 
 
-def get_all_file_paths(directory):
-    """Use the os.walk() function to get all file paths in a directory"""
+def get_all_files(directory):
+    """Use the os.walk() function to get all txt file names in a directory"""
 
     file_paths = []
     for root, dirs, files in os.walk(directory):
         for file in files:
-            file_paths.append(os.path.join(root, file))
+            if os.path.splitext(file)[1] == ".txt":
+                file_paths.append(file)
     return file_paths
 
 directory = 'Data'
-file_paths = get_all_file_paths(directory)
-st.write(f"**{len(file_paths)}** files found in {directory} folder")
+file_paths = get_all_files(directory)
 
-option = st.selectbox('**How many files to show?**', ('All', 'Some'))
-match option:
-    case "All":
-       for path in file_paths:
-            process_data_file(path)
-    case "Some":
+with st.sidebar:
+    st.write(f"**{len(file_paths)}** files found in {directory} folder")
+    option = st.checkbox('**Show all files**', value=True)
+    if option:
+        options = file_paths
+    else:
         options = st.multiselect('Choose the files', file_paths)
-        for path in options:
-            process_data_file(path)
+
+for file in options:
+    process_data_file(os.path.join(directory, file))
