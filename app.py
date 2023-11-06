@@ -6,6 +6,7 @@ import streamlit as st
 st.title("Gait Analysis Report")
 st.text("This is where the data from Visual3D will be imported and visualized")
 
+
 def process_data_file(directory, file):
     """Load file, show raw data, plot line chart"""
 
@@ -33,7 +34,7 @@ def process_data_file(directory, file):
 
 
 def get_all_files(directory):
-    """Get all txt file names in a directory, sort by Left/Right, get pairs into sections """
+    """Get all txt file names in a directory, sort by Left/Right"""
 
     file_paths = []
     for root, dirs, files in os.walk(directory):
@@ -51,24 +52,35 @@ def get_all_files(directory):
         files_pairs.append(filesL[i])
         files_pairs.append(filesR[i])
     files = files_pairs + filesOther
-    sections = filesL + filesOther
-    return files, sections
+    return files
 
 directory = 'Data'
-files, sections = get_all_files(directory)
+files = get_all_files(directory)
 
 with st.sidebar:
+    st.markdown("[Gait Analysis Report](#gait-analysis-report)")
     st.write(f"**{len(files)}** files found in {directory} folder")
     # option = st.checkbox('**Show all files**', value=True)
     option = True
     if option:
         data_files = files
-    else:
-        data_files = st.multiselect('Choose the files', files)
-    for sec in data_files:
-        st.markdown(f"[{sec}](#{sec.lower().replace(' ', '-').replace('_', '-')})")
-    # for sec in sections:
-    #     st.markdown(f"[{sec}](#{sec.lower().replace(' ', '-').replace('_', '-')})")
+    # else:
+    #     data_files = st.multiselect('Choose the files', files)
+    for f in data_files:
+        if f.startswith('L'):
+            if f.startswith('L_'):
+                sec = f[2:]
+                lnk = f.lower().replace('_', '-')
+            elif f.startswith('Left '):
+                sec = f[5:]
+                lnk = f.lower().replace(' ', '-') 
+        elif f.startswith('R'):
+            sec = ""
+        else:
+            sec = f
+            lnk = f.lower().replace(' ', '-') 
+        if sec:
+            st.markdown(f"[{sec}](#{lnk})")
 
 for file in data_files:
     process_data_file(directory, file)
