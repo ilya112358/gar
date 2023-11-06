@@ -1,4 +1,4 @@
-import numpy as np
+# import numpy as np
 import os
 import pandas as pd
 import streamlit as st
@@ -6,16 +6,15 @@ import streamlit as st
 st.title("Gait Analysis Report")
 st.text("This is where the data from Visual3D will be imported and visualized")
 
-def process_data_file(file_path):
+def process_data_file(directory, file):
     """Load file, show raw data, plot line chart"""
 
-    filename_with_extension = os.path.basename(file_path)
-    filename_without_extension = os.path.splitext(filename_with_extension)[0]
-    st.header(filename_without_extension)
+    st.header(file)
 
+    file_path = os.path.join(directory, file) + ".txt"
     df = pd.read_csv(file_path, sep='\t')
     # Now 'df' is a pandas DataFrame containing the data from the file
-    if st.checkbox('Show raw data', key=filename_without_extension):  # unique key required for the widget
+    if st.checkbox('Show raw data', key=file):  # unique key required for the widget
         st.subheader('Raw data')
         st.write(df)
 
@@ -34,13 +33,14 @@ def process_data_file(file_path):
 
 
 def get_all_files(directory):
-    """Use the os.walk() function to get all txt file names in a directory, sort by Left/Right"""
+    """Get all txt file names in a directory, sort by Left/Right, get pairs into sections """
 
     file_paths = []
     for root, dirs, files in os.walk(directory):
         for file in files:
-            if os.path.splitext(file)[1] == ".txt":
-                file_paths.append(file)
+            f_name, f_ext = os.path.splitext(file)
+            if f_ext == ".txt":
+                file_paths.append(f_name)
     file_paths.sort()
     filesR = [f for f in file_paths if f.startswith('R')]
     filesL = [f for f in file_paths if f.startswith('L')]
@@ -51,18 +51,24 @@ def get_all_files(directory):
         files_pairs.append(filesL[i])
         files_pairs.append(filesR[i])
     files = files_pairs + filesOther
-    return files
+    sections = filesL + filesOther
+    return files, sections
 
 directory = 'Data'
-files = get_all_files(directory)
+files, sections = get_all_files(directory)
 
 with st.sidebar:
     st.write(f"**{len(files)}** files found in {directory} folder")
-    option = st.checkbox('**Show all files**', value=True)
+    # option = st.checkbox('**Show all files**', value=True)
+    option = True
     if option:
         data_files = files
     else:
         data_files = st.multiselect('Choose the files', files)
+    for sec in data_files:
+        st.markdown(f"[{sec}](#{sec.lower().replace(' ', '-').replace('_', '-')})")
+    # for sec in sections:
+    #     st.markdown(f"[{sec}](#{sec.lower().replace(' ', '-').replace('_', '-')})")
 
 for file in data_files:
-    process_data_file(os.path.join(directory, file))
+    process_data_file(directory, file)
