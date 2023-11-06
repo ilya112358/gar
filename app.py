@@ -34,25 +34,35 @@ def process_data_file(file_path):
 
 
 def get_all_files(directory):
-    """Use the os.walk() function to get all txt file names in a directory"""
+    """Use the os.walk() function to get all txt file names in a directory, sort by Left/Right"""
 
     file_paths = []
     for root, dirs, files in os.walk(directory):
         for file in files:
             if os.path.splitext(file)[1] == ".txt":
                 file_paths.append(file)
-    return file_paths
+    file_paths.sort()
+    filesR = [f for f in file_paths if f.startswith('R')]
+    filesL = [f for f in file_paths if f.startswith('L')]
+    filesOther = [f for f in file_paths if (f not in filesR) and (f not in filesL)]
+    assert len(filesR) == len(filesL)  # all should be paired, weak check
+    files_pairs = []
+    for i in range(len(filesR)):
+        files_pairs.append(filesL[i])
+        files_pairs.append(filesR[i])
+    files = files_pairs + filesOther
+    return files
 
 directory = 'Data'
-file_paths = get_all_files(directory)
+files = get_all_files(directory)
 
 with st.sidebar:
-    st.write(f"**{len(file_paths)}** files found in {directory} folder")
+    st.write(f"**{len(files)}** files found in {directory} folder")
     option = st.checkbox('**Show all files**', value=True)
     if option:
-        options = file_paths
+        data_files = files
     else:
-        options = st.multiselect('Choose the files', file_paths)
+        data_files = st.multiselect('Choose the files', files)
 
-for file in options:
+for file in data_files:
     process_data_file(os.path.join(directory, file))
