@@ -70,10 +70,10 @@ with st.sidebar:
         if f.startswith('L'):
             if f.startswith('L_'):
                 sec = f[2:]
-                lnk = f.lower().replace('_', '-')
+                lnk = f.lower().replace(' ', '-').replace('_', '-')
             elif f.startswith('Left '):
                 sec = f[5:]
-                lnk = f.lower().replace(' ', '-') 
+                lnk = f.lower().replace(' ', '-').replace('_', '-') 
         elif f.startswith('R'):
             sec = ""
         else:
