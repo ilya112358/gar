@@ -25,10 +25,10 @@ def process_data_file(directory, file):
         df = df.drop('Static.c3d', axis='columns')
     except KeyError:  # ['Static.c3d'] not found (e.g., Moment)
         pass
-    # df.reset_index(drop=True, inplace=True)  # use index as gait cycle?
-    df.rename(columns={df.columns[0]: 'Gait cycle'}, inplace=True)
     for col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
+    df.rename(columns={df.columns[0]: 'Gait cycle'}, inplace=True)
+    df['Gait cycle'] -= 1
 
     st.line_chart(df, x='Gait cycle')
 
@@ -54,18 +54,14 @@ def get_all_files(directory):
     files = files_pairs + filesOther
     return files
 
+
 directory = 'Data'
-files = get_all_files(directory)
+data_files = get_all_files(directory)
 
 with st.sidebar:
     st.markdown("[Gait Analysis Report](#gait-analysis-report)")
-    st.write(f"**{len(files)}** files found in {directory} folder")
-    # option = st.checkbox('**Show all files**', value=True)
-    option = True
-    if option:
-        data_files = files
-    # else:
-    #     data_files = st.multiselect('Choose the files', files)
+    st.write(f"**{len(data_files)}** files found in {directory} folder")
+    # Sections list
     for f in data_files:
         if f.startswith('L'):
             if f.startswith('L_'):
@@ -78,7 +74,7 @@ with st.sidebar:
             sec = ""
         else:
             sec = f
-            lnk = f.lower().replace(' ', '-') 
+            lnk = f.lower().replace(' ', '-').replace('_', '-')  
         if sec:
             st.markdown(f"[{sec}](#{lnk})")
 
