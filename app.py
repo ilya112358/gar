@@ -8,16 +8,16 @@ st.text("This is where the data from Visual3D will be imported and visualized")
 
 
 def process_data_file(directory, file):
-    """Load file, show raw data, plot line chart"""
+    """Load file, pre-process data, return dataframe"""
 
-    st.header(file)
+    # st.header(file)
 
     file_path = os.path.join(directory, file) + ".txt"
     df = pd.read_csv(file_path, sep='\t')
     # Now 'df' is a pandas DataFrame containing the data from the file
-    if st.checkbox('Show raw data', key=file):  # unique key required for the widget
-        st.subheader('Raw data')
-        st.write(df)
+    # if st.checkbox('Show raw data', key=file):  # unique key required for the widget
+    #     st.subheader('Raw data')
+    #     st.write(df)
 
     # Remove the first 4 text rows and the Static column to get dynamic data to plot
     df = df.drop(df.index[:4])
@@ -29,7 +29,18 @@ def process_data_file(directory, file):
         df[col] = pd.to_numeric(df[col], errors='coerce')
     df.rename(columns={df.columns[0]: 'Gait cycle'}, inplace=True)
     df['Gait cycle'] -= 1
+    return df
 
+    # st.line_chart(df, x='Gait cycle')
+
+
+def plot_graph(file, df):
+    """Visualize the dataframe"""
+
+    st.header(file)
+    if st.checkbox('Show raw data', key=file):  # unique key required for the widget
+        st.subheader('Raw data')
+        st.write(df)
     st.line_chart(df, x='Gait cycle')
 
 
@@ -79,4 +90,5 @@ with st.sidebar:
             st.markdown(f"[{sec}](#{lnk})")
 
 for file in data_files:
-    process_data_file(directory, file)
+    df = process_data_file(directory, file)
+    plot_graph(file, df)
