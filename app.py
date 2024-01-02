@@ -10,36 +10,31 @@ st.text("This is where the data from Visual3D will be imported and visualized")
 def process_data_file(directory, file):
     """Load file, pre-process data, return dataframe"""
 
-    # st.header(file)
-
     file_path = os.path.join(directory, file) + ".txt"
     df = pd.read_csv(file_path, sep='\t')
-    # Now 'df' is a pandas DataFrame containing the data from the file
-    # if st.checkbox('Show raw data', key=file):  # unique key required for the widget
-    #     st.subheader('Raw data')
-    #     st.write(df)
-
-    # Remove the first 4 text rows and the Static column to get dynamic data to plot
+    # Now 'df' is a pandas DataFrame containing data from the file
+    # Remove first 4 text rows (headers)
     df = df.drop(df.index[:4])
-    try:
-        df = df.drop('Static.c3d', axis='columns')
-    except KeyError:  # ['Static.c3d'] not found (e.g., Moment)
-        pass
     for col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
+    # The file's 1st col are numbers from 1 to 101
     df.rename(columns={df.columns[0]: 'Gait cycle'}, inplace=True)
     df['Gait cycle'] -= 1
+    # Add average over dynamic walks as the last column
+    df1 = df.drop('Gait cycle', axis='columns')
+    try:
+        df1 = df1.drop('Static.c3d', axis='columns')
+    except KeyError:  # ['Static.c3d'] not found (e.g., Moment)
+        pass
+    df['Mean'] = df1.mean(numeric_only=True, axis=1)
     return df
-
-    # st.line_chart(df, x='Gait cycle')
 
 
 def plot_graph(file, df):
     """Visualize the dataframe"""
 
     st.header(file)
-    if st.checkbox('Show raw data', key=file):  # unique key required for the widget
-        st.subheader('Raw data')
+    if st.checkbox('Show data', key=file):  # unique key required for the widget
         st.write(df)
     st.line_chart(df, x='Gait cycle')
 
