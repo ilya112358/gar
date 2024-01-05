@@ -3,7 +3,9 @@ import pandas as pd
 import streamlit as st
 
 st.title("Gait Analysis Report")
-st.text("This is where the data from Visual3D will be imported and visualized")
+st.text("This is where the data from Visual3D gets visualized")
+st.write("Graphs display mean value, choose 'Check consistency' to see individual walks")
+st.write("Hint: you can move/zoom a graph, double-click to return to default")
 
 
 @st.cache_data
@@ -42,6 +44,13 @@ def plot_graph(file, df):
     if st.checkbox(f"Check consistecy for {file}"):
         st.line_chart(df2, x='Gait cycle')
     else:
+        stats = df['Mean'].describe()
+        idmx = df['Mean'].idxmax()
+        s_mx = f"Max: {stats['max']:.2f} at {df.loc[idmx, 'Gait cycle']}%"
+        idmn = df['Mean'].idxmin()
+        s_mn = f"Min: {stats['min']:.2f} at {df.loc[idmn, 'Gait cycle']}%"
+        stats = f"{s_mx}, {s_mn}, Range: {stats['max']-stats['min']:.2f}"
+        st.markdown(f':blue[{stats}]')
         st.line_chart(df1, x='Gait cycle')
 
 
@@ -75,19 +84,16 @@ with st.sidebar:
     st.write(f"**{len(data_files)}** files found in {directory} folder")
     # Sections list
     for f in data_files:
-        if f.startswith('L'):
-            if f.startswith('L_'):
-                sec = f[2:]
-                lnk = f.lower().replace(' ', '-').replace('_', '-')
-            elif f.startswith('Left '):
-                sec = f[5:]
-                lnk = f.lower().replace(' ', '-').replace('_', '-') 
-        elif f.startswith('R'):
+        if f.startswith('L_'):
+            sec = f[2:]
+        elif f.startswith('Left '):
+            sec = f[5:]
+        elif f.startswith('R_') or f.startswith('Right '):
             sec = ''
         else:
             sec = f
-            lnk = f.lower().replace(' ', '-').replace('_', '-')  
         if sec:
+            lnk = f.lower().replace(' ', '-').replace('_', '-')  # slugify
             st.markdown(f"[{sec}](#{lnk})")
 
 for file in data_files:
