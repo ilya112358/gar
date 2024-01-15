@@ -27,7 +27,7 @@ def process_data_file(directory, file):
     # Add average over dynamic walks as the last column
     df1 = df.drop('Gait cycle', axis='columns')
     try:
-        df1 = df1.drop('Static.c3d', axis='columns')
+        df1 = df1.drop('Static', axis='columns')
     except KeyError:  # ['Static.c3d'] not found (e.g., Moment)
         pass
     df['Mean'] = df1.mean(numeric_only=True, axis=1)
@@ -37,13 +37,16 @@ def process_data_file(directory, file):
 def plot_graph(file, df):
     """Visualize the dataframe"""
 
+    def plot_df(df):
+        st.line_chart(df, x='Gait cycle')
+
     st.header(file)
     if st.checkbox(f"Show gait data for {file}"):
         st.dataframe(df, hide_index=True)
     df1 = df[['Gait cycle', 'Mean']]
     df2 = df.drop('Mean', axis='columns')
     if st.checkbox(f"Check consistecy for {file}"):
-        st.line_chart(df2, x='Gait cycle')
+        plot_df(df2)
     else:
         stats = df['Mean'].describe()
         idmx = df['Mean'].idxmax()
@@ -52,7 +55,7 @@ def plot_graph(file, df):
         s_mn = f"Min: {stats['min']:.2f} at {df.loc[idmn, 'Gait cycle']}%"
         stats = f"{s_mx}, {s_mn}, Range: {stats['max']-stats['min']:.2f}"
         st.markdown(f':blue[{stats}]')
-        st.line_chart(df1, x='Gait cycle')
+        plot_df(df1)
 
 
 @st.cache_data
