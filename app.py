@@ -1,6 +1,10 @@
+from bokeh.embed import file_html
+from bokeh.plotting import figure
+from bokeh.models import ColumnDataSource, Legend
 import os
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.title("Gait Analysis Report")
 st.text("This is where the data from Visual3D gets visualized")
@@ -38,7 +42,31 @@ def plot_graph(file, df):
     """Visualize the dataframe"""
 
     def plot_df(df):
-        st.line_chart(df, x='Gait cycle')
+        p = figure(x_axis_label='Gait cycle, %',
+                   y_axis_label='Degrees', 
+                   height=400,
+                   width=600,
+                   tools = 'box_zoom, reset',
+                   tooltips = '[$name] @$name{0.00} at @{Gait cycle}')  # [Mean] -0.77 at 33
+        p.border_fill_color = 'seashell'
+        lines, labels = [], []
+        for col in range(1, len(df.columns)):
+            column = df.columns[col]
+            if column == 'Static':
+                color = 'orange'
+            elif column == 'Mean':
+                color = 'black'
+            else:
+                color = ['red', 'green', 'blue', 'cyan'][col-1]
+            line = p.line('Gait cycle', column, source=ColumnDataSource(df), color=color, name=column)
+            lines.append(line)
+            labels.append((column, [line]))
+        legend = Legend(items=labels, location='center')
+        legend.orientation = 'horizontal'
+        legend.border_line_color = 'black'
+        p.add_layout(legend, 'above')        
+        components.html(file_html(p, 'cdn', ), height=400, width=600)
+        #st.line_chart(df, x='Gait cycle')
 
     st.header(file)
     if st.checkbox(f"Show gait data for {file}"):
