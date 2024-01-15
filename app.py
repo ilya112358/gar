@@ -20,6 +20,7 @@ def process_data_file(directory, file):
     for col in df.columns:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     df.columns = df.columns.str.replace('Gait ', '')
+    df.columns = df.columns.str.replace('.c3d', '')
     # The file's 1st col are numbers from 1 to 101
     df.rename(columns={df.columns[0]: 'Gait cycle'}, inplace=True)
     df['Gait cycle'] -= 1
@@ -95,6 +96,8 @@ with st.sidebar:
         if sec:
             lnk = f.lower().replace(' ', '-').replace('_', '-')  # slugify
             st.markdown(f"[{sec}](#{lnk})")
+    if st.button("Clear Cache"):
+        st.cache_data.clear()
 
 for file in data_files:
     df = process_data_file(directory, file)
