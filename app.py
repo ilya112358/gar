@@ -9,7 +9,6 @@ import streamlit.components.v1 as components
 st.title("Gait Analysis Report")
 st.text("This is where the data from Visual3D gets visualized")
 st.write("Graphs display mean value, choose 'Check consistency' to see individual walks")
-st.write("Hint: you can move/zoom a graph, double-click to return to default")
 
 
 @st.cache_data
