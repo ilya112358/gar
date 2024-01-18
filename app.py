@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
+# st.set_page_config(layout="wide", initial_sidebar_state="collapsed")
 
 @st.cache_data
 def process_data_file(directory, file):
@@ -64,11 +65,12 @@ def plot_graph(file, df):
         #st.line_chart(df, x='Gait cycle')
 
     st.header(file)
-    if st.checkbox(f"Show gait data for {file}"):
+    if st.checkbox(f"Show source data for {file}"):
         st.dataframe(df, hide_index=True)
     df1 = df[['Gait cycle', 'Mean']]
     df2 = df.drop('Mean', axis='columns')
     if st.checkbox(f"Check consistecy for {file}"):
+        st.markdown(f':blue[{df2.shape[1]-2} dynamic and 1 static]')
         plot_df(df2)
     else:
         stats = df['Mean'].describe()
@@ -116,12 +118,10 @@ data_files = get_all_files(directory)
 
 st.title("Gait Analysis Report")
 st.text("This is where the data from Visual3D gets visualized")
-st.write("Graphs display mean value, choose 'Check consistency' to see individual walks")
 
 with st.sidebar:
     st.markdown("[Go to the Top](#gait-analysis-report)")
-    st.write(f"**{len(data_files)}** files found in {directory} folder")
-    # Sections list
+    st.subheader("Sections list")
     for f in data_files:
         if type(f) == tuple:
             section = f[0]
@@ -133,12 +133,16 @@ with st.sidebar:
     if st.button("Clear Cache"):
         st.cache_data.clear()
 
+col1, col2 = st.columns(2)
+
 for file in data_files:
     if type(file) == tuple:
         df = process_data_file(directory, file[1])
-        plot_graph(file[1], df)
+        with col1:
+            plot_graph(file[1], df)
         df = process_data_file(directory, file[2])
-        plot_graph(file[2], df)
+        with col2:
+            plot_graph(file[2], df)
     else:
         df = process_data_file(directory, file)
         plot_graph(file, df)
