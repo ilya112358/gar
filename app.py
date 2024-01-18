@@ -6,10 +6,6 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.title("Gait Analysis Report")
-st.text("This is where the data from Visual3D gets visualized")
-st.write("Graphs display mean value, choose 'Check consistency' to see individual walks")
-
 
 @st.cache_data
 def process_data_file(directory, file):
@@ -87,7 +83,7 @@ def plot_graph(file, df):
 
 @st.cache_data
 def get_all_files(directory):
-    """Get all txt file names in a directory, sort by Left/Right"""
+    """Get all txt file names in a directory, pair by Left/Right"""
 
     file_paths = []
     for root, dirs, files in os.walk(directory):
@@ -96,39 +92,53 @@ def get_all_files(directory):
             if f_ext == '.txt':
                 file_paths.append(f_name)
     file_paths.sort()
-    filesR = [f for f in file_paths if f.startswith('R')]
     filesL = [f for f in file_paths if f.startswith('L')]
+    filesR = [f for f in file_paths if f.startswith('R')]
     filesOther = [f for f in file_paths if (f not in filesR) and (f not in filesL)]
-    assert len(filesR) == len(filesL)  # all should be paired, weak check
     files_pairs = []
-    for i in range(len(filesR)):
-        files_pairs.append(filesL[i])
-        files_pairs.append(filesR[i])
+    for i in range(len(filesL)):
+        fL = filesL[i]
+        fR = filesR[i]
+        if fL.startswith('L_'):
+            section = fL[2:]
+        elif fL.startswith('Left '):
+            section = fL[5:]
+        if not fR.endswith(section):
+            st.write(f"Error! Check file names [{fL}] and [{fR}] for inconsistency")
+            exit(1)
+        files_set = (section, fL, fR)
+        files_pairs.append(files_set) 
     files = files_pairs + filesOther
     return files
 
 directory = 'Data'
 data_files = get_all_files(directory)
 
+st.title("Gait Analysis Report")
+st.text("This is where the data from Visual3D gets visualized")
+st.write("Graphs display mean value, choose 'Check consistency' to see individual walks")
+
 with st.sidebar:
     st.markdown("[Go to the Top](#gait-analysis-report)")
     st.write(f"**{len(data_files)}** files found in {directory} folder")
     # Sections list
     for f in data_files:
-        if f.startswith('L_'):
-            sec = f[2:]
-        elif f.startswith('Left '):
-            sec = f[5:]
-        elif f.startswith('R_') or f.startswith('Right '):
-            sec = ''
+        if type(f) == tuple:
+            section = f[0]
+            anchor = f[1]
         else:
-            sec = f
-        if sec:
-            lnk = f.lower().replace(' ', '-').replace('_', '-')  # slugify
-            st.markdown(f"[{sec}](#{lnk})")
+            section = anchor = f
+        lnk = anchor.lower().replace(' ', '-').replace('_', '-')  # slugify
+        st.markdown(f"[{section}](#{lnk})")
     if st.button("Clear Cache"):
         st.cache_data.clear()
 
 for file in data_files:
-    df = process_data_file(directory, file)
-    plot_graph(file, df)
+    if type(file) == tuple:
+        df = process_data_file(directory, file[1])
+        plot_graph(file[1], df)
+        df = process_data_file(directory, file[2])
+        plot_graph(file[2], df)
+    else:
+        df = process_data_file(directory, file)
+        plot_graph(file, df)
