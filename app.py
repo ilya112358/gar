@@ -7,18 +7,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 
-# set minimum width to 1200
 st.set_page_config(layout="wide")
-st.markdown(
-    f"""
-    <style>
-        .appview-container .main .block-container{{
-            min-width: 1400px;
-        }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+
 
 @st.cache_data
 def process_data_file(directory, file):
@@ -75,7 +65,7 @@ def plot_graph(file, df):
         p.add_layout(legend, 'above')        
         components.html(file_html(p, 'cdn', ), height=400, width=600)
         #st.line_chart(df, x='Gait cycle')
-
+    
     st.header(file)
     if st.checkbox(f"Show source data for {file}"):
         st.dataframe(df, hide_index=True)
@@ -93,6 +83,57 @@ def plot_graph(file, df):
         stats = f"{s_mx}, {s_mn}, Range: {stats['max']-stats['min']:.2f}"
         st.markdown(f':blue[{stats}]')
         plot_df(df1)
+
+
+def plot_widegraph(bioparameter, df1, df2):
+    """Visualize the dataframe"""
+
+    def plot_df(df):
+        size = {'height': 600, 'width': 1000}
+        p = figure(x_axis_label='Gait cycle, %',
+                   y_axis_label='Degrees', 
+                   height=size['height'],
+                   width=size['width'],
+                   tools = 'box_zoom, reset',
+                   tooltips = '[$name] @$name{0.00} at @{Gait cycle}')  # [Mean] -0.77 at 33
+        p.border_fill_color = 'seashell'
+        lines, labels = [], []
+        for col in range(1, len(df.columns)):
+            column = df.columns[col]
+            if column == 'Static':
+                color = 'orange'
+            elif column == 'Mean':
+                color = 'black'
+            else:
+                color = ['red', 'blue', 'green', 'cyan', 'fuchsia', 'blueviolet', 'brown'][col-1]
+            if 'Mean' in column:
+                width = 3
+            else:
+                width = 1
+            line = p.line('Gait cycle', column, source=ColumnDataSource(df), 
+                          color=color, width=width, name=column)
+            lines.append(line)
+            labels.append((column, [line]))
+        legend = Legend(items=labels, location='center')
+        legend.orientation = 'horizontal'
+        legend.border_line_color = 'black'
+        p.add_layout(legend, 'above')        
+        components.html(file_html(p, 'cdn', ), height=size['height'], width=size['width'])
+
+    st.header(bioparameter)
+    foot2plot = st.radio(f'Show plot for {bioparameter}', ['Left', 'Right', 'Both'], 
+                         horizontal=True, index=2)
+    match foot2plot:
+        case 'Both':
+            # combine the first (Gait cycle) and two last (Mean) columns
+            df1.rename(columns={df1.columns[-1]: 'Left Mean'}, inplace=True)
+            df2.rename(columns={df2.columns[-1]: 'Right Mean'}, inplace=True)
+            new_df = pd.concat([df1.iloc[:, :1], df1.iloc[:, -1:], df2.iloc[:, -1:]], axis=1)
+        case 'Left':
+            new_df = df1
+        case 'Right':
+            new_df = df2
+    plot_df(new_df)
 
 
 @st.cache_data
@@ -125,6 +166,7 @@ def get_all_files(directory):
     files = files_pairs + filesOther
     return files
 
+
 directory = 'Data'
 data_files = get_all_files(directory)
 
@@ -137,24 +179,18 @@ with st.sidebar:
     for f in data_files:
         if type(f) == tuple:
             section = f[0]
-            anchor = f[1]
         else:
-            section = anchor = f
-        lnk = anchor.lower().replace(' ', '-').replace('_', '-')  # slugify
+            section = f
+        lnk = section.lower().replace(' ', '-').replace('_', '-')  # slugify
         st.markdown(f"[{section}](#{lnk})")
     if st.button("Clear Cache"):
         st.cache_data.clear()
 
-col1, col2 = st.columns(2)
-
 for file in data_files:
     if type(file) == tuple:
-        df = process_data_file(directory, file[1])
-        with col1:
-            plot_graph(file[1], df)
-        df = process_data_file(directory, file[2])
-        with col2:
-            plot_graph(file[2], df)
+            df1 = process_data_file(directory, file[1])
+            df2 = process_data_file(directory, file[2])
+            plot_widegraph(file[0], df1, df2)
     else:
         df = process_data_file(directory, file)
         plot_graph(file, df)
