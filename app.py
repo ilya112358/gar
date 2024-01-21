@@ -6,7 +6,19 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
+
+# set minimum width to 1200
 st.set_page_config(layout="wide")
+st.markdown(
+    f"""
+    <style>
+        .appview-container .main .block-container{{
+            min-width: 1400px;
+        }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 @st.cache_data
 def process_data_file(directory, file):
