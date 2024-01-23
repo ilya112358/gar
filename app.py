@@ -45,57 +45,23 @@ def process_pair(directory, files):
     df_left.rename(columns={df_left.columns[-1]: 'Left Mean'}, inplace=True)
     df_right.rename(columns={df_right.columns[-1]: 'Right Mean'}, inplace=True)
     # combine Gait cycle and two Mean columns to plot both
-    new_df = pd.concat([df_left.iloc[:, :1], df_left.iloc[:, -1:], df_right.iloc[:, -1:]], axis=1)
-    return df_left, df_right, new_df
+    df_both = pd.concat([df_left.iloc[:, :1], df_left.iloc[:, -1:], df_right.iloc[:, -1:]], axis=1)
 
-
-def plot_graph(file, df):
-    """Visualize single dataframe"""
-
-    def plot_df(df):
-        p = figure(x_axis_label='Gait cycle, %',
-                   y_axis_label='Degrees', 
-                   height=400,
-                   width=600,
-                   tools = 'box_zoom, reset',
-                   tooltips = '[$name] @$name{0.00} at @{Gait cycle}')  # [Mean] -0.77 at 33
-        p.border_fill_color = 'seashell'
-        lines, labels = [], []
-        for col in range(1, len(df.columns)):
-            column = df.columns[col]
-            if column == 'Static':
-                color = 'orange'
-            elif column == 'Mean':
-                color = 'black'
-            else:
-                color = ['red', 'green', 'blue', 'cyan'][col-1]
-            line = p.line('Gait cycle', column, source=ColumnDataSource(df), color=color, name=column)
-            lines.append(line)
-            labels.append((column, [line]))
-        legend = Legend(items=labels, location='center')
-        legend.orientation = 'horizontal'
-        legend.border_line_color = 'black'
-        p.add_layout(legend, 'above')        
-        components.html(file_html(p, 'cdn', ), height=400, width=600)
-        #st.line_chart(df, x='Gait cycle')
-    
-    st.header(file)
-    if st.checkbox(f"Show source data for {file}"):
-        st.dataframe(df, hide_index=True)
-    df1 = df[['Gait cycle', 'Mean']]
-    df2 = df.drop('Mean', axis='columns')
-    if st.checkbox(f"Check consistecy for {file}"):
-        st.markdown(f':blue[{df2.shape[1]-2} dynamic and 1 static]')
-        plot_df(df2)
-    else:
-        stats = df['Mean'].describe()
-        idmx = df['Mean'].idxmax()
-        s_mx = f"Max: {stats['max']:.2f} at {df.loc[idmx, 'Gait cycle']}%"
-        idmn = df['Mean'].idxmin()
-        s_mn = f"Min: {stats['min']:.2f} at {df.loc[idmn, 'Gait cycle']}%"
-        stats = f"{s_mx}, {s_mn}, Range: {stats['max']-stats['min']:.2f}"
-        st.markdown(f':blue[{stats}]')
-        plot_df(df1)
+    def stats(df, col):
+        idxmax = df[col].idxmax()
+        max = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
+        idxmin = df[col].idxmin()
+        min = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
+        return max, min
+        
+    stats_left = stats(df_left, 'Left Mean')
+    stats_right = stats(df_right, 'Right Mean')
+    df_stats = pd.DataFrame({
+        'Side': ['Left', 'Right'], 
+        'Maximum': [stats_left[0], stats_right[0]], 
+        'Minimum': [stats_left[1], stats_right[1]]
+        })
+    return df_left, df_right, df_both, df_stats
 
 
 def plot_widegraph(bioparameter, dfs):
@@ -137,6 +103,11 @@ def plot_widegraph(bioparameter, dfs):
     opts = ['Left', 'Right', 'Both']
     foot2plot = st.radio(f'Show plot for {bioparameter}', opts, horizontal=True, index=2)
     plot_df(dfs[opts.index(foot2plot)], foot2plot)
+    st.dataframe(dfs[3], hide_index=True)
+
+    # styles = [dict(selector="td", props=[('width', '100px'), ('text-align', 'left')])]
+    # df_table = dfs[3].style.set_properties(**{'font-size': '12pt'}).set_table_styles(styles)
+    # st.table(df_table)
 
 
 @st.cache_data
@@ -190,9 +161,5 @@ with st.sidebar:
         st.cache_data.clear()
 
 for file in data_files:
-    if type(file) == tuple:
-        dfs = process_pair(directory, file)
-        plot_widegraph(file[0], dfs)
-    else:
-        df = process_data_file(directory, file)
-        plot_graph(file, df)
+    dfs = process_pair(directory, file)
+    plot_widegraph(file[0], dfs)
