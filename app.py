@@ -36,8 +36,21 @@ def process_data_file(directory, file):
     return df
 
 
+@st.cache_data
+def process_pair(directory, files):
+    """Process data for left and right"""
+
+    df_left = process_data_file(directory, files[1])
+    df_right = process_data_file(directory, files[2])
+    df_left.rename(columns={df_left.columns[-1]: 'Left Mean'}, inplace=True)
+    df_right.rename(columns={df_right.columns[-1]: 'Right Mean'}, inplace=True)
+    # combine Gait cycle and two Mean columns to plot both
+    new_df = pd.concat([df_left.iloc[:, :1], df_left.iloc[:, -1:], df_right.iloc[:, -1:]], axis=1)
+    return df_left, df_right, new_df
+
+
 def plot_graph(file, df):
-    """Visualize the dataframe"""
+    """Visualize single dataframe"""
 
     def plot_df(df):
         p = figure(x_axis_label='Gait cycle, %',
@@ -85,10 +98,10 @@ def plot_graph(file, df):
         plot_df(df1)
 
 
-def plot_widegraph(bioparameter, df1, df2):
-    """Visualize the dataframe"""
+def plot_widegraph(bioparameter, dfs):
+    """Visualize left and right"""
 
-    def plot_df(df):
+    def plot_df(df, lrb):
         size = {'height': 600, 'width': 1000}
         p = figure(x_axis_label='Gait cycle, %',
                    y_axis_label='Degrees', 
@@ -102,7 +115,7 @@ def plot_widegraph(bioparameter, df1, df2):
             column = df.columns[col]
             if column == 'Static':
                 color = 'orange'
-            elif column == 'Mean':
+            elif 'Mean' in column and lrb != 'Both':
                 color = 'black'
             else:
                 color = ['red', 'blue', 'green', 'cyan', 'fuchsia', 'blueviolet', 'brown'][col-1]
@@ -121,19 +134,9 @@ def plot_widegraph(bioparameter, df1, df2):
         components.html(file_html(p, 'cdn', ), height=size['height'], width=size['width'])
 
     st.header(bioparameter)
-    foot2plot = st.radio(f'Show plot for {bioparameter}', ['Left', 'Right', 'Both'], 
-                         horizontal=True, index=2)
-    match foot2plot:
-        case 'Both':
-            # combine the first (Gait cycle) and two last (Mean) columns
-            df1.rename(columns={df1.columns[-1]: 'Left Mean'}, inplace=True)
-            df2.rename(columns={df2.columns[-1]: 'Right Mean'}, inplace=True)
-            new_df = pd.concat([df1.iloc[:, :1], df1.iloc[:, -1:], df2.iloc[:, -1:]], axis=1)
-        case 'Left':
-            new_df = df1
-        case 'Right':
-            new_df = df2
-    plot_df(new_df)
+    opts = ['Left', 'Right', 'Both']
+    foot2plot = st.radio(f'Show plot for {bioparameter}', opts, horizontal=True, index=2)
+    plot_df(dfs[opts.index(foot2plot)], foot2plot)
 
 
 @st.cache_data
@@ -188,9 +191,8 @@ with st.sidebar:
 
 for file in data_files:
     if type(file) == tuple:
-            df1 = process_data_file(directory, file[1])
-            df2 = process_data_file(directory, file[2])
-            plot_widegraph(file[0], df1, df2)
+        dfs = process_pair(directory, file)
+        plot_widegraph(file[0], dfs)
     else:
         df = process_data_file(directory, file)
         plot_graph(file, df)
