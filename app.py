@@ -1,6 +1,7 @@
 from bokeh.embed import file_html
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, Legend
+import csv
 import os
 import pandas as pd
 import streamlit as st
@@ -14,7 +15,7 @@ st.set_page_config(layout="wide")
 def process_data_file(directory, file):
     """Load file, pre-process data, return dataframe"""
 
-    file_path = os.path.join(directory, file) + '.txt'
+    file_path = os.path.join(directory, file)
     df = pd.read_csv(file_path, sep='\t')
     # Now 'df' is a pandas DataFrame containing data from the file
     # Remove first 4 text rows (headers)
@@ -114,31 +115,22 @@ def plot_widegraph(bioparameter, dfs):
 def get_all_files(directory):
     """Get all txt file names in a directory, pair by Left/Right"""
 
-    file_paths = []
-    for root, dirs, files in os.walk(directory):
-        for file in files:
-            f_name, f_ext = os.path.splitext(file)
-            if f_ext == '.txt':
-                file_paths.append(f_name)
-    file_paths.sort()
-    filesL = [f for f in file_paths if f.startswith('L')]
-    filesR = [f for f in file_paths if f.startswith('R')]
-    filesOther = [f for f in file_paths if (f not in filesR) and (f not in filesL)]
-    files_pairs = []
-    for i in range(len(filesL)):
-        fL = filesL[i]
-        fR = filesR[i]
-        if fL.startswith('L_'):
-            section = fL[2:]
-        elif fL.startswith('Left '):
-            section = fL[5:]
-        if not fR.endswith(section):
-            st.write(f"Error! Check file names [{fL}] and [{fR}] for inconsistency")
-            exit(1)
-        files_set = (section, fL, fR)
-        files_pairs.append(files_set) 
-    files = files_pairs + filesOther
-    return files
+    # read from configuration file
+    config_file = 'source.csv'
+    source = []
+    with open(config_file, 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            # Use the strip method to remove leading and trailing spaces from each element
+            source.append(tuple(element.strip() for element in row))
+
+    # for all rows in source check if row[1] and row[2] exist in directory Data
+    file_pairs = []
+    for row in source:
+        if os.path.isfile(os.path.join(directory, row[1])) and os.path.isfile(os.path.join(directory, row[2])):
+            file_pairs.append(row)
+    print(f"{len(file_pairs)} pairs loaded")
+    return file_pairs
 
 
 directory = 'Data'
