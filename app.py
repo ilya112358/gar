@@ -1,6 +1,6 @@
 from bokeh.embed import file_html
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, Legend
+from bokeh.models import ColumnDataSource, Legend, Range1d
 import csv
 import os
 import pandas as pd
@@ -79,9 +79,10 @@ def plot_widegraph(bioparameter, dfs):
             y_axis_label="Degrees",
             height=size["height"],
             width=size["width"],
-            tools="box_zoom, reset",
+            tools="pan, box_zoom, reset",
             tooltips="[$name] @$name{0.00} at @{Gait cycle}",  # [Mean] -0.77 at 33
-            min_border_top=20,  # Add padding above the plot
+            toolbar_location="above",
+            x_range=Range1d(start=0, end=100),  # Limit the x-axis to the range 0-100
         )
         p.border_fill_color = "seashell"
         lines, labels = [], []
@@ -129,7 +130,6 @@ def plot_widegraph(bioparameter, dfs):
             lines.append(line)
             labels.append((column, [line]))
         legend = Legend(items=labels)
-        # legend.orientation = 'horizontal'
         legend.border_line_color = "black"
         p.add_layout(legend, "right")
         components.html(
@@ -188,10 +188,7 @@ with st.sidebar:
     st.markdown("[Go to the Top](#gait-analysis-report)")
     st.subheader("Sections list")
     for f in data_files:
-        if type(f) == tuple:
-            section = f[0]
-        else:
-            section = f
+        section = f[0]
         lnk = section.lower().replace(" ", "-").replace("_", "-")  # slugify
         st.markdown(f"[{section}](#{lnk})")
     if st.button("Clear Cache"):
