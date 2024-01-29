@@ -1,14 +1,13 @@
 from bokeh.embed import file_html
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, Legend, Range1d
-import csv
 import os
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 import toml
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide")  # not a central column
 
 
 @st.cache_data
@@ -75,7 +74,6 @@ def plot_widegraph(bioparameter, dfs, colors, size):
     """Visualize left and right"""
 
     def plot_df(df, lrb):
-        # size = {"height": 500, "width": 1000}
         p = figure(
             x_axis_label="Gait cycle, %",
             y_axis_label="Degrees",
@@ -84,7 +82,7 @@ def plot_widegraph(bioparameter, dfs, colors, size):
             tools="pan, box_zoom, reset",
             tooltips="[$name] @$name{0.00} at @{Gait cycle}",  # [Mean] -0.77 at 33
             toolbar_location="above",
-            x_range=Range1d(start=0, end=100),  # Limit the x-axis to the range 0-100
+            x_range=Range1d(start=0, end=100),  # Limit the x-axis, default (-5, 105)
         )
         p.border_fill_color = "seashell"
         lines, labels = [], []
@@ -130,16 +128,11 @@ def plot_widegraph(bioparameter, dfs, colors, size):
     plot_df(dfs[opts.index(foot2plot)], foot2plot)
     st.dataframe(dfs[3], hide_index=True)
 
-    # styles = [dict(selector="td", props=[('width', '100px'), ('text-align', 'left')])]
-    # df_table = dfs[3].style.set_properties(**{'font-size': '12pt'}).set_table_styles(styles)
-    # st.table(df_table)
-
 
 @st.cache_data
 def get_all_files(directory, data):
-    """Get all txt file names in a directory, pair by Left/Right"""
+    """Get existing txt file pairs in a directory, return list of tuples"""
 
-    # for all rows in source check if row[1] and row[2] exist in directory Data
     file_pairs = []
     for item in data:
         if os.path.isfile(
@@ -150,10 +143,17 @@ def get_all_files(directory, data):
     return file_pairs
 
 
+@st.cache_data
+def load_config(file):
+    """Load configuration file in a separate function to cache it"""
+
+    with open(file, "r") as f:
+        config = toml.load(f)
+    return config
+
+
 directory = "Data"
-# read from configuration file
-with open("config.toml", "r") as file:
-    config = toml.load(file)
+config = load_config("config.toml")
 data_files = get_all_files(directory, config["data"])
 
 st.title("Gait Analysis Report")
