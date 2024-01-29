@@ -55,7 +55,8 @@ def process_pair(directory, files):
         max = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
         idxmin = df[col].idxmin()
         min = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
-        return max, min
+        range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.2f}" 
+        return max, min, range
 
     stats_left = stats(df_left, "Left Mean")
     stats_right = stats(df_right, "Right Mean")
@@ -64,6 +65,7 @@ def process_pair(directory, files):
             "Side": ["Left", "Right"],
             "Maximum": [stats_left[0], stats_right[0]],
             "Minimum": [stats_left[1], stats_right[1]],
+            "Range": [stats_left[2], stats_right[2]],
         }
     )
     return df_left, df_right, df_both, df_stats
