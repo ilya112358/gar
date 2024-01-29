@@ -1,0 +1,94 @@
+[[data]]
+name = "Ankle Dorsiflexion"
+left_file = "Left Ankle Angles.txt"
+right_file = "Right Ankle Angles.txt"
+
+[[data]]
+name = "Ankle Inversion"
+left_file = "Left Ankle Inversion.txt"
+right_file = "Right Ankle Inversion.txt"
+
+[[data]]
+name = "Foot Pitch"
+left_file = "Left Foot Pitch Angles.txt"
+right_file = "Right Foot Pitch Angles.txt"
+
+[[data]]
+name = "Foot Internal Progression"
+left_file = "Left Foot Progression.txt"
+right_file = "Right Foot Progression.txt"
+
+[[data]]
+name = "Knee Flexion"
+left_file = "Left Knee Angles.txt"
+right_file = "Right Knee Angles.txt"
+
+[[data]]
+name = "Knee Varus"
+left_file = "Left Knee Adduction.txt"
+right_file = "Right Knee Adduction.txt"
+
+[[data]]
+name = "Knee Internal Rotation"
+left_file = "Left Knee Rotation.txt"
+right_file = "Right Knee Rotation.txt"
+
+[[data]]
+name = "Hip Flexion"
+left_file = "Left Hip Angles.txt"
+right_file = "Right Hip Angles.txt"
+
+[[data]]
+name = "Hip Adduction"
+left_file = "Left Hip Adduction.txt"
+right_file = "Right Hip Adduction.txt"
+
+[[data]]
+name = "Hip Internal Rotation"
+left_file = "Left Hip Rotation.txt"
+right_file = "Right Hip Rotation.txt"
+
+[[data]]
+name = "Pelvic Anterior Tilt"
+left_file = "Left Pelvic Tilt.txt"
+right_file = "Right Pelvic Tilt.txt"
+
+[[data]]
+name = "Pelvic Up Obliquity"
+left_file = "Left Pelvic Obliquity.txt"
+right_file = "Right Pelvic Obliquity.txt"
+
+[[data]]
+name = "Pelvic Internal Rotation"
+left_file = "Left Pelvic Rotation.txt"
+right_file = "Right Pelvic Rotation.txt"
+
+[colors]
+static = "orange"
+mean = "black"
+color_list = [
+    "red",
+    "blue",
+    "green",
+    "cyan",
+    "magenta",
+    "lime",
+    "gray",
+    "navy",
+    "teal",
+    "olive",
+    "purple",
+    "maroon",
+    "aqua",
+    "fuchsia",
+    "silver",
+    "blueviolet",
+    "brown",
+    "darkorange",
+    "lightseagreen",
+    "deeppink"
+]
+
+[size]
+height = 500
+width = 1000

@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
-
+import toml
 
 st.set_page_config(layout="wide")
 
@@ -55,7 +55,7 @@ def process_pair(directory, files):
         max = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
         idxmin = df[col].idxmin()
         min = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
-        range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.2f}" 
+        range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.2f}"
         return max, min, range
 
     stats_left = stats(df_left, "Left Mean")
@@ -71,11 +71,11 @@ def process_pair(directory, files):
     return df_left, df_right, df_both, df_stats
 
 
-def plot_widegraph(bioparameter, dfs):
+def plot_widegraph(bioparameter, dfs, colors, size):
     """Visualize left and right"""
 
     def plot_df(df, lrb):
-        size = {"height": 500, "width": 1000}
+        # size = {"height": 500, "width": 1000}
         p = figure(
             x_axis_label="Gait cycle, %",
             y_axis_label="Degrees",
@@ -91,32 +91,11 @@ def plot_widegraph(bioparameter, dfs):
         for col in range(1, len(df.columns)):
             column = df.columns[col]
             if column == "Static":
-                color = "orange"
+                color = colors["static"]
             elif "Mean" in column and lrb != "Both":
-                color = "black"
+                color = colors["mean"]
             else:
-                color = [
-                    "red",
-                    "blue",
-                    "green",
-                    "cyan",
-                    "magenta",
-                    "lime",
-                    "gray",
-                    "navy",
-                    "teal",
-                    "olive",
-                    "purple",
-                    "maroon",
-                    "aqua",
-                    "fuchsia",
-                    "silver",
-                    "blueviolet",
-                    "brown",
-                    "darkorange",
-                    "lightseagreen",
-                    "deeppink",
-                ][col - 1]
+                color = colors["color_list"][col - 1]
             if "Mean" in column:
                 width = 3
             else:
@@ -157,31 +136,25 @@ def plot_widegraph(bioparameter, dfs):
 
 
 @st.cache_data
-def get_all_files(directory):
+def get_all_files(directory, data):
     """Get all txt file names in a directory, pair by Left/Right"""
-
-    # read from configuration file
-    config_file = "source.csv"
-    source = []
-    with open(config_file, "r") as file:
-        reader = csv.reader(file)
-        for row in reader:
-            # Use the strip method to remove leading and trailing spaces from each element
-            source.append(tuple(element.strip() for element in row))
 
     # for all rows in source check if row[1] and row[2] exist in directory Data
     file_pairs = []
-    for row in source:
-        if os.path.isfile(os.path.join(directory, row[1])) and os.path.isfile(
-            os.path.join(directory, row[2])
-        ):
-            file_pairs.append(row)
+    for item in data:
+        if os.path.isfile(
+            os.path.join(directory, item["left_file"])
+        ) and os.path.isfile(os.path.join(directory, item["right_file"])):
+            file_pairs.append((item["name"], item["left_file"], item["right_file"]))
     print(f"{len(file_pairs)} pairs loaded")
     return file_pairs
 
 
 directory = "Data"
-data_files = get_all_files(directory)
+# read from configuration file
+with open("config.toml", "r") as file:
+    config = toml.load(file)
+data_files = get_all_files(directory, config["data"])
 
 st.title("Gait Analysis Report")
 st.text("This is where the data from Visual3D gets visualized")
@@ -198,4 +171,4 @@ with st.sidebar:
 
 for file in data_files:
     dfs = process_pair(directory, file)
-    plot_widegraph(file[0], dfs)
+    plot_widegraph(file[0], dfs, config["colors"], config["size"])
