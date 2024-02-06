@@ -7,8 +7,11 @@ import streamlit as st
 import streamlit.components.v1 as components
 import toml
 
-st.set_page_config(page_title="Gait Analysis Report", layout="wide")  # not a central column
+st.set_page_config(
+    page_title="Gait Analysis Report", layout="wide"
+)  # not a central column
 st.image("GAR_topimage.jpg", width=512)
+
 
 def process_data_file(file):
     """Load file, pre-process data, return dataframe"""
@@ -34,21 +37,29 @@ def process_data_file(file):
     return df
 
 
-def plot_widegraph(bioparameter, dfs, colors, size):
+def plot_widegraph(bioparameter, dfs, colors, size, kind):
     """Visualize left and right"""
 
-    def plot_df(df, lrb):
+    def plot_df(df, lrb, kind):
+        if kind == "kinematics":
+            y_label = "Angle, degrees"
+        else:
+            y_label = "Force, N / Body Weight"
         p = figure(
             x_axis_label="Gait cycle, %",
-            y_axis_label="Degrees",
+            y_axis_label=y_label,
             height=size["height"],
             width=size["width"],
             tools="pan, box_zoom, reset",
-            tooltips="[$name] @$name{0.00} at @{Gait cycle}",  # [Mean] -0.77 at 33
+            tooltips="[$name] @$name{0.00} at @{Gait cycle}%",  # [Mean] -0.77 at 33%
             toolbar_location="above",
             x_range=Range1d(start=0, end=100),  # Limit the x-axis, default (-5, 105)
         )
         p.border_fill_color = "seashell"
+        p.xaxis.axis_label_text_font_style = p.yaxis.axis_label_text_font_style = (
+            "normal"
+        )
+        p.xaxis.axis_label_text_font_size = p.yaxis.axis_label_text_font_size = "14px"
         lines, labels = [], []
         for col in range(1, len(df.columns)):
             column = df.columns[col]
@@ -89,8 +100,9 @@ def plot_widegraph(bioparameter, dfs, colors, size):
     foot2plot = st.radio(
         f"Show plot for {bioparameter}", opts, horizontal=True, index=2
     )
-    plot_df(dfs[opts.index(foot2plot)], foot2plot)
+    plot_df(dfs[opts.index(foot2plot)], foot2plot, kind)
     st.dataframe(dfs[3], hide_index=True)
+
 
 # @st.cache_data
 def load_config(file):
@@ -164,8 +176,12 @@ def select_dfs(config_files, uploaded_files):
 
 directory = "Data"
 config = load_config("config.toml")
+if "data_kinematics" not in st.session_state:
+    st.session_state.data_kinematics = []
+if "data_kinetics" not in st.session_state:
+    st.session_state.data_kinetics = []
 if "dataset" not in st.session_state:
-    st.session_state.dataset = []
+    st.session_state.dataset = False
 st.title("Gait Analysis Report")
 st.text("This is where the data from Visual3D gets visualized")
 st.write("---")
@@ -179,21 +195,41 @@ if not st.session_state.dataset:
             accept_multiple_files=True,
         )
         submitted = st.form_submit_button("submit")
-    data_files = []
+    data_kinematics, data_kinetics = [], []
     if submitted:
-        data_files = select_dfs(config["data"], uploaded_files)
+        data_kinematics = select_dfs(config["kinematics"], uploaded_files)
+        data_kinetics = select_dfs(config["kinetics"], uploaded_files)
     elif st.button("Press to use example data"):
-        data_files = get_all_files(directory, config["data"])
-    if data_files:
-        for file_pair in data_files:
-            st.session_state.dataset.append((file_pair[0], process_dfs(file_pair)))
+        data_kinematics = get_all_files(directory, config["kinematics"])
+        data_kinetics = get_all_files(directory, config["kinetics"])
+    if data_kinematics or data_kinetics:
+        for file_pair in data_kinematics:
+            st.session_state.data_kinematics.append(
+                (file_pair[0], process_dfs(file_pair))
+            )
+        for file_pair in data_kinetics:
+            st.session_state.data_kinetics.append(
+                (file_pair[0], process_dfs(file_pair))
+            )
+        st.session_state.dataset = True
         st.rerun()
 
 with st.sidebar:
     st.markdown("[Go to the Top](#gait-analysis-report)")
     st.subheader("Parameters:")
-for file_pair in st.session_state.dataset:
-    plot_widegraph(file_pair[0], file_pair[1], config["colors"], config["size"])
+st.sidebar.write("Kinematics:")
+for file_pair in st.session_state.data_kinematics:
+    plot_widegraph(
+        file_pair[0], file_pair[1], config["colors"], config["size"], "kinematics"
+    )
+    section = file_pair[0]
+    lnk = section.lower().replace(" ", "-").replace("_", "-")  # slugify
+    st.sidebar.markdown(f"[{section}](#{lnk})")
+st.sidebar.write("Kinetics:")
+for file_pair in st.session_state.data_kinetics:
+    plot_widegraph(
+        file_pair[0], file_pair[1], config["colors"], config["size"], "kinetics"
+    )
     section = file_pair[0]
     lnk = section.lower().replace(" ", "-").replace("_", "-")  # slugify
     st.sidebar.markdown(f"[{section}](#{lnk})")

@@ -1,72 +1,87 @@
-[[data]]
+[[kinematics]]
 name = "Ankle Dorsiflexion"
 left_file = "Left Ankle Angles.txt"
 right_file = "Right Ankle Angles.txt"
 
-[[data]]
+[[kinematics]]
 name = "Ankle Inversion"
 left_file = "Left Ankle Inversion.txt"
 right_file = "Right Ankle Inversion.txt"
 
-[[data]]
+[[kinematics]]
 name = "Ankle Rotation"
 left_file = "Left Ankle Rotation.txt"
 right_file = "Right Ankle Rotation.txt"
 
-[[data]]
+[[kinematics]]
 name = "Foot Pitch"
 left_file = "Left Foot Pitch Angles.txt"
 right_file = "Right Foot Pitch Angles.txt"
 
-[[data]]
+[[kinematics]]
 name = "Foot Internal Progression"
 left_file = "Left Foot Progression.txt"
 right_file = "Right Foot Progression.txt"
 
-[[data]]
+[[kinematics]]
 name = "Knee Flexion"
 left_file = "Left Knee Angles.txt"
 right_file = "Right Knee Angles.txt"
 
-[[data]]
+[[kinematics]]
 name = "Knee Varus"
 left_file = "Left Knee Adduction.txt"
 right_file = "Right Knee Adduction.txt"
 
-[[data]]
+[[kinematics]]
 name = "Knee Internal Rotation"
 left_file = "Left Knee Rotation.txt"
 right_file = "Right Knee Rotation.txt"
 
-[[data]]
+[[kinematics]]
 name = "Hip Flexion"
 left_file = "Left Hip Angles.txt"
 right_file = "Right Hip Angles.txt"
 
-[[data]]
+[[kinematics]]
 name = "Hip Adduction"
 left_file = "Left Hip Adduction.txt"
 right_file = "Right Hip Adduction.txt"
 
-[[data]]
+[[kinematics]]
 name = "Hip Internal Rotation"
 left_file = "Left Hip Rotation.txt"
 right_file = "Right Hip Rotation.txt"
 
-[[data]]
+[[kinematics]]
 name = "Pelvic Anterior Tilt"
 left_file = "Left Pelvic Tilt.txt"
 right_file = "Right Pelvic Tilt.txt"
 
-[[data]]
+[[kinematics]]
 name = "Pelvic Up Obliquity"
 left_file = "Left Pelvic Obliquity.txt"
 right_file = "Right Pelvic Obliquity.txt"
 
-[[data]]
+[[kinematics]]
 name = "Pelvic Internal Rotation"
 left_file = "Left Pelvic Rotation.txt"
 right_file = "Right Pelvic Rotation.txt"
+
+[[kinetics]]
+name = "Anterior GRF"
+left_file = "Left GRF X.txt"
+right_file = "Right GRF X.txt"
+
+[[kinetics]]
+name = "Medial GRF"
+left_file = "Left GRF Y.txt"
+right_file = "Right GRF Y.txt"
+
+[[kinetics]]
+name = "Vertical GRF"
+left_file = "Left GRF Z.txt"
+right_file = "Right GRF Z.txt"
 
 [colors]
 static = "orange"
