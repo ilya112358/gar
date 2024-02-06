@@ -7,8 +7,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 import toml
 
-st.set_page_config(layout="wide")  # not a central column
-
+st.set_page_config(page_title="Gait Analysis Report", layout="wide")  # not a central column
+st.image("GAR_topimage.jpg", width=512)
 
 def process_data_file(file):
     """Load file, pre-process data, return dataframe"""
@@ -168,7 +168,7 @@ if "dataset" not in st.session_state:
     st.session_state.dataset = []
 st.title("Gait Analysis Report")
 st.text("This is where the data from Visual3D gets visualized")
-st.write("(reload the page to start over)")
+st.write("---")
 
 if not st.session_state.dataset:
     st.subheader("Upload your data or use example data.")
