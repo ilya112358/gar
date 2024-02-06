@@ -104,15 +104,6 @@ def plot_widegraph(bioparameter, dfs, colors, size, kind):
     st.dataframe(dfs[3], hide_index=True)
 
 
-# @st.cache_data
-def load_config(file):
-    """Load configuration file in a separate function to cache it but is it useful?"""
-
-    with open(file, "r") as f:
-        config = toml.load(f)
-    return config
-
-
 def process_dfs(file_pair):
     """Process data for left and right"""
 
@@ -174,14 +165,16 @@ def select_dfs(config_files, uploaded_files):
     return file_pairs
 
 
-directory = "Data"
-config = load_config("config.toml")
+with open("config.toml", "r") as f:
+    config = toml.load(f)
+
 if "data_kinematics" not in st.session_state:
     st.session_state.data_kinematics = []
 if "data_kinetics" not in st.session_state:
     st.session_state.data_kinetics = []
 if "dataset" not in st.session_state:
     st.session_state.dataset = False
+
 st.title("Gait Analysis Report")
 st.text("This is where the data from Visual3D gets visualized")
 st.write("---")
@@ -200,8 +193,8 @@ if not st.session_state.dataset:
         data_kinematics = select_dfs(config["kinematics"], uploaded_files)
         data_kinetics = select_dfs(config["kinetics"], uploaded_files)
     elif st.button("Press to use example data"):
-        data_kinematics = get_all_files(directory, config["kinematics"])
-        data_kinetics = get_all_files(directory, config["kinetics"])
+        data_kinematics = get_all_files("Data", config["kinematics"])
+        data_kinetics = get_all_files("Data", config["kinetics"])
     if data_kinematics or data_kinetics:
         for file_pair in data_kinematics:
             st.session_state.data_kinematics.append(
