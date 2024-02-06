@@ -9,6 +9,11 @@ left_file = "Left Ankle Inversion.txt"
 right_file = "Right Ankle Inversion.txt"
 
 [[data]]
+name = "Ankle Rotation"
+left_file = "Left Ankle Rotation.txt"
+right_file = "Right Ankle Rotation.txt"
+
+[[data]]
 name = "Foot Pitch"
 left_file = "Left Foot Pitch Angles.txt"
 right_file = "Right Foot Pitch Angles.txt"

@@ -92,9 +92,9 @@ def plot_widegraph(bioparameter, dfs, colors, size):
     plot_df(dfs[opts.index(foot2plot)], foot2plot)
     st.dataframe(dfs[3], hide_index=True)
 
-@st.cache_data
+# @st.cache_data
 def load_config(file):
-    """Load configuration file in a separate function to cache it"""
+    """Load configuration file in a separate function to cache it but is it useful?"""
 
     with open(file, "r") as f:
         config = toml.load(f)
