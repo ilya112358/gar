@@ -1,6 +1,11 @@
+from bokeh.embed import file_html
+from bokeh.plotting import figure
+from bokeh.models import ColumnDataSource, Legend, Range1d
 import os
-import toml
 import pandas as pd
+import streamlit as st
+import streamlit.components.v1 as components
+import toml
 
 
 class Config:
@@ -18,10 +23,10 @@ c = Config()
 
 
 class DataSet:
-    def __init__(self, directory, valid_files):
+    def __init__(self, directory):
         file_pairs = []
         self.data2plot = []
-        for item in valid_files:
+        for item in c.kinematics:
             left_file = os.path.join(directory, item["left_file"])
             right_file = os.path.join(directory, item["right_file"])
             if os.path.isfile(left_file) and os.path.isfile(right_file):
@@ -87,3 +92,73 @@ class DataSet:
                     (file_pair[0], process_dfs(file_pair))
                 )        
         print(f"{len(self.data2plot)} pairs loaded")
+
+
+class Plot:
+    def __init__(self, d):
+        for item in d.data2plot:
+            self.plot(item[0], item[1], c.colors, c.size, "kinematics")
+
+    def plot(self, bioparameter, dfs, colors, size, kind):
+        def plot_df(df, lrb, kind):
+            if kind == "kinematics":
+                y_label = "Angle, degrees"
+            else:
+                y_label = "Force, N / Body Weight"
+            p = figure(
+                x_axis_label="Gait cycle, %",
+                y_axis_label=y_label,
+                height=size["height"],
+                width=size["width"],
+                tools="pan, box_zoom, reset",
+                tooltips="[$name] @$name{0.00} at @{Gait cycle}%",  # [Mean] -0.77 at 33%
+                toolbar_location="above",
+                x_range=Range1d(start=0, end=100),  # Limit the x-axis, default (-5, 105)
+            )
+            p.border_fill_color = "seashell"
+            p.xaxis.axis_label_text_font_style = p.yaxis.axis_label_text_font_style = (
+                "normal"
+            )
+            p.xaxis.axis_label_text_font_size = p.yaxis.axis_label_text_font_size = "14px"
+            lines, labels = [], []
+            for col in range(1, len(df.columns)):
+                column = df.columns[col]
+                if column == "Static":
+                    color = colors["static"]
+                elif "Mean" in column and lrb != "Both":
+                    color = colors["mean"]
+                else:
+                    color = colors["color_list"][col - 1]
+                if "Mean" in column:
+                    width = 3
+                else:
+                    width = 1
+                line = p.line(
+                    "Gait cycle",
+                    column,
+                    source=ColumnDataSource(df),
+                    color=color,
+                    width=width,
+                    name=column,
+                )
+                lines.append(line)
+                labels.append((column, [line]))
+            legend = Legend(items=labels)
+            legend.border_line_color = "black"
+            p.add_layout(legend, "right")
+            components.html(
+                file_html(
+                    p,
+                    "cdn",
+                ),
+                height=size["height"],
+                width=size["width"],
+            )
+
+        st.header(bioparameter)
+        opts = ["Left", "Right", "Both"]
+        foot2plot = st.radio(
+            f"Show plot for {bioparameter}", opts, horizontal=True, index=2
+        )
+        plot_df(dfs[opts.index(foot2plot)], foot2plot, kind)
+        st.dataframe(dfs[3], hide_index=True)
