@@ -96,8 +96,12 @@ class DataSet:
 
 class Plot:
     def __init__(self, d):
+        params = [item[0] for item in d.data2plot]
+        # use multiselect to choose parameters to plot
+        self.params2plot = st.multiselect("Choose parameters to plot", params)
         for item in d.data2plot:
-            self.plot(item[0], item[1], c.colors, c.size, "kinematics")
+            if item[0] in self.params2plot:
+                self.plot(item[0], item[1], c.colors, c.size, "kinematics")
 
     def plot(self, bioparameter, dfs, colors, size, kind):
         def plot_df(df, lrb, kind):
