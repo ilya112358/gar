@@ -68,20 +68,20 @@ name = "Pelvic Internal Rotation"
 left_file = "Left Pelvic Rotation.txt"
 right_file = "Right Pelvic Rotation.txt"
 
-[[kinetics]]
-name = "Anterior GRF"
-left_file = "Left GRF X.txt"
-right_file = "Right GRF X.txt"
+#[[kinetics]]
+#name = "Anterior GRF"
+#left_file = "Left GRF X.txt"
+#right_file = "Right GRF X.txt"
 
-[[kinetics]]
-name = "Medial GRF"
-left_file = "Left GRF Y.txt"
-right_file = "Right GRF Y.txt"
+#[[kinetics]]
+#name = "Medial GRF"
+#left_file = "Left GRF Y.txt"
+#right_file = "Right GRF Y.txt"
 
-[[kinetics]]
-name = "Vertical GRF"
-left_file = "Left GRF Z.txt"
-right_file = "Right GRF Z.txt"
+#[[kinetics]]
+#name = "Vertical GRF"
+#left_file = "Left GRF Z.txt"
+#right_file = "Right GRF Z.txt"
 
 [colors]
 static = "orange"
