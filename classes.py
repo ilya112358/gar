@@ -95,15 +95,19 @@ class DataSet:
 
 
 class Plot:
-    def __init__(self, d):
+    def __init__(self, d, param=None, src=None):
         params = [item[0] for item in d.data2plot]
-        # use multiselect to choose parameters to plot
-        self.params2plot = st.multiselect("Choose parameters to plot", params)
-        for item in d.data2plot:
-            if item[0] in self.params2plot:
-                self.plot(item[0], item[1], c.colors, c.size, "kinematics")
+        if param:
+            index = params.index(param)
+            self.plot(param, d.data2plot[index][1], c.colors, c.size, "kinematics", src=src)
+        else:
+            # use multiselect to choose parameters to plot
+            self.params2plot = st.multiselect("Choose parameters to plot", params)
+            for item in d.data2plot:
+                if item[0] in self.params2plot:
+                    self.plot(item[0], item[1], c.colors, c.size, "kinematics", src="")
 
-    def plot(self, bioparameter, dfs, colors, size, kind):
+    def plot(self, bioparameter, dfs, colors, size, kind, src):
         def plot_df(df, lrb, kind):
             if kind == "kinematics":
                 y_label = "Angle, degrees"
@@ -159,10 +163,10 @@ class Plot:
                 width=size["width"],
             )
 
-        st.header(bioparameter)
+        st.header(f"{bioparameter} {src}")
         opts = ["Left", "Right", "Both"]
         foot2plot = st.radio(
-            f"Show plot for {bioparameter}", opts, horizontal=True, index=2
+            f"Show plot for {bioparameter} {src}", opts, horizontal=True, index=2
         )
         plot_df(dfs[opts.index(foot2plot)], foot2plot, kind)
         st.dataframe(dfs[3], hide_index=True)
