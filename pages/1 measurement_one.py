@@ -1,5 +1,5 @@
 import streamlit as st
-from classes import c
+from classes import c, DataSet
 
-st.write("The following kinematics files are valid:")
-st.write(c.kinematics)
+d = DataSet("Data", c.kinematics)
+st.write(d.data2plot)
