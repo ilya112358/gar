@@ -27,6 +27,8 @@ class DataSet:
     def __init__(self, directory):
         file_pairs = []
         self.data2plot = []
+        with open(os.path.join(directory, "Info.txt"), "r") as f:
+            self.info = f.read()
         for item in c.kinematics:
             left_file = os.path.join(directory, item["left_file"])
             right_file = os.path.join(directory, item["right_file"])
@@ -128,7 +130,7 @@ class Plot:
             self.plot(param, d.data2plot[index][1], c.colors, c.size, "kinematics", src=src)
         else:
             # use multiselect to choose parameters to plot
-            self.params2plot = st.multiselect("Choose parameters to plot", params)
+            self.params2plot = st.multiselect("You can choose multiple parameters to plot", params)
             for item in d.data2plot:
                 if item[0] in self.params2plot:
                     self.plot(item[0], item[1], c.colors, c.size, "kinematics", src="")
@@ -154,6 +156,7 @@ class Plot:
                 "normal"
             )
             p.xaxis.axis_label_text_font_size = p.yaxis.axis_label_text_font_size = "14px"
+            p.toolbar.logo = None
             lines, labels = [], []
             for col in range(1, len(df.columns)):
                 column = df.columns[col]
@@ -218,6 +221,7 @@ class PlotCompare:
         p.border_fill_color = "seashell"
         p.xaxis.axis_label_text_font_style = p.yaxis.axis_label_text_font_style = "normal"
         p.xaxis.axis_label_text_font_size = p.yaxis.axis_label_text_font_size = "14px"
+        p.toolbar.logo = None
         lines, labels = [], []
         for col in range(1, len(df_both.columns)):
             column = df_both.columns[col]
