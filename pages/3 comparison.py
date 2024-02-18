@@ -1,15 +1,13 @@
 import streamlit as st
 
-from classes import Plot
+from classes import DataCompare, PlotCompare
 
-params1 = [item[0] for item in st.session_state["d1"].data2plot]
-params2 = [item[0] for item in st.session_state["d2"].data2plot]
-params = []
-for item in params1:
-    if item in params2:
-        params.append(item)
+if "d1" not in st.session_state or "d2" not in st.session_state:
+    st.error("Please load both measurements first!", icon="🚨")
+    st.stop()
+dc = DataCompare(st.session_state["d1"], st.session_state["d2"])
 st.title("Comparison")
-st.write("Select a parameter to compare")
-param = st.selectbox("Select parameter", params)
-p1 = Plot(st.session_state["d1"], param, src="from measurement_one")
-p2 = Plot(st.session_state["d2"], param, src="from measurement_two")
+st.markdown("This page allows you to compare the two measurements.")
+param = st.selectbox("Select parameter", list(dc.data2plot.keys()))
+pc = PlotCompare(dc, param)
+st.markdown("[Go to the Top](#comparison)")
