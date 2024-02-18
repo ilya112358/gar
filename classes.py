@@ -221,17 +221,17 @@ class PlotCompare:
         lines, labels = [], []
         for col in range(1, len(df_both.columns)):
             column = df_both.columns[col]
-            if "Mean" in column:
-                width = 3
-            else:
-                width = 1
+            line_dash = "solid" if "Mean 1" in column else "dashed"
+            width = 2
+            color = "blue" if "Left" in column else "red"
             line = p.line(
                 "Gait cycle",
                 column,
                 source=ColumnDataSource(df_both),
-                color=c.colors["color_list"][col - 1],
+                color=color,
                 width=width,
                 name=column,
+                line_dash=line_dash,
             )
             lines.append(line)
             labels.append((column, [line]))
