@@ -141,6 +141,56 @@ class DataCompare:
                 self.data2plot[item] = (d_df_both, d_df_stats)
 
 
+class Figure:
+    """Create a figure for plotting"""
+
+    def __init__(self, x_label="Gait cycle, %", y_label="Angle, degrees"):
+        self.figure = figure(
+            x_axis_label=x_label,
+            y_axis_label=y_label,
+            height=c.size["height"],
+            width=c.size["width"],
+            tools="pan, box_zoom, reset",
+            # will {Gait cycle} work for GRF?
+            tooltips="[$name] @$name{0.00} at @{Gait cycle}%",  # [Mean] -0.77 at 33%
+            toolbar_location="above",
+            x_range=Range1d(start=0, end=100),  # Limit the x-axis, default (-5, 105)
+        )
+        self.figure.border_fill_color = "seashell"
+        self.figure.xaxis.axis_label_text_font_style = "normal"
+        self.figure.yaxis.axis_label_text_font_style = "normal"
+        self.figure.xaxis.axis_label_text_font_size = "14px"
+        self.figure.yaxis.axis_label_text_font_size = "14px"
+        self.figure.toolbar.logo = None
+
+    def add_line(self, df, column, color, width, line_dash="solid"):
+        line = self.figure.line(
+            "Gait cycle",
+            column,
+            source=ColumnDataSource(df),
+            color=color,
+            width=width,
+            name=column,
+            line_dash=line_dash,
+        )
+        return line
+
+    def add_legend(self, labels):
+        legend = Legend(items=labels)
+        legend.border_line_color = "black"
+        self.figure.add_layout(legend, "right")
+
+    def render(self):
+        components.html(
+            file_html(
+                self.figure,
+                "cdn",
+            ),
+            height=c.size["height"],
+            width=c.size["width"],
+        )
+
+
 class Plot:
     """Plot the data from the DataSet object"""
 
@@ -150,75 +200,33 @@ class Plot:
             "You can choose multiple parameters to plot", params
         )
         for param in self.params2plot:
-            self.plot(param, d.data2plot[param], c.colors, c.size, "kinematics")
+            self.plot(param, d.data2plot[param])
 
-    def plot(self, bioparameter, dfs, colors, size, kind):
-        def plot_df(df, lrb, kind):
-            if kind == "kinematics":
-                y_label = "Angle, degrees"
-            else:
-                y_label = "Force, N / Body Weight"
-            p = figure(
-                x_axis_label="Gait cycle, %",
-                y_axis_label=y_label,
-                height=size["height"],
-                width=size["width"],
-                tools="pan, box_zoom, reset",
-                tooltips="[$name] @$name{0.00} at @{Gait cycle}%",  # [Mean] -0.77 at 33%
-                toolbar_location="above",
-                x_range=Range1d(
-                    start=0, end=100
-                ),  # Limit the x-axis, default (-5, 105)
-            )
-            p.border_fill_color = "seashell"
-            p.xaxis.axis_label_text_font_style = p.yaxis.axis_label_text_font_style = (
-                "normal"
-            )
-            p.xaxis.axis_label_text_font_size = p.yaxis.axis_label_text_font_size = (
-                "14px"
-            )
-            p.toolbar.logo = None
-            lines, labels = [], []
-            for col in range(1, len(df.columns)):
-                column = df.columns[col]
-                if column == "Static":
-                    color = colors["static"]
-                elif "Mean" in column and lrb != "Both":
-                    color = colors["mean"]
-                else:
-                    color = colors["color_list"][col - 1]
-                if "Mean" in column:
-                    width = 3
-                else:
-                    width = 1
-                line = p.line(
-                    "Gait cycle",
-                    column,
-                    source=ColumnDataSource(df),
-                    color=color,
-                    width=width,
-                    name=column,
-                )
-                lines.append(line)
-                labels.append((column, [line]))
-            legend = Legend(items=labels)
-            legend.border_line_color = "black"
-            p.add_layout(legend, "right")
-            components.html(
-                file_html(
-                    p,
-                    "cdn",
-                ),
-                height=size["height"],
-                width=size["width"],
-            )
-
+    def plot(self, bioparameter, dfs):
         st.header(f"{bioparameter}")
         opts = ["Left", "Right", "Both"]
         foot2plot = st.radio(
             f"Show plot for {bioparameter}", opts, horizontal=True, index=2
         )
-        plot_df(dfs[opts.index(foot2plot)], foot2plot, kind)
+        fig = Figure()
+        labels = []
+        df = dfs[opts.index(foot2plot)]
+        for col in range(1, len(df.columns)):
+            column = df.columns[col]
+            if column == "Static":
+                color = c.colors["static"]
+            elif "Mean" in column and foot2plot != "Both":
+                color = c.colors["mean"]
+            else:
+                color = c.colors["color_list"][col - 1]
+            if "Mean" in column:
+                width = 3
+            else:
+                width = 1
+            line = fig.add_line(df, column, color, width)
+            labels.append((column, [line]))
+        fig.add_legend(labels)
+        fig.render()
         st.markdown("###### Mean value statistics")
         st.dataframe(dfs[3], hide_index=True)
 
