@@ -67,7 +67,8 @@ class DataSet:
             df_right.rename(columns={df_right.columns[-1]: "Right Mean"}, inplace=True)
             # combine Gait cycle and two Mean columns to plot both
             df_both = pd.concat(
-                [df_left.iloc[:, :1], df_left.iloc[:, -1:], df_right.iloc[:, -1:]], axis=1
+                [df_left.iloc[:, :1], df_left.iloc[:, -1:], df_right.iloc[:, -1:]],
+                axis=1,
             )
 
             def stats(df, col):
@@ -91,9 +92,7 @@ class DataSet:
             return df_left, df_right, df_both, df_stats
 
         for file_pair in file_pairs:
-            self.data2plot.append(
-                    (file_pair[0], process_dfs(file_pair))
-                )        
+            self.data2plot.append((file_pair[0], process_dfs(file_pair)))
         print(f"{len(self.data2plot)} pairs loaded")
 
 
@@ -110,12 +109,22 @@ class DataCompare:
                 d2_df_stats = d2_data2plot[item[0]][3]
                 # connect d1_df_both and d2_df_both
                 # rename columns to avoid duplicates
-                d1_df_both.rename(columns={"Left Mean": "Left Mean 1", "Right Mean": "Right Mean 1"}, inplace=True)
+                d1_df_both.rename(
+                    columns={"Left Mean": "Left Mean 1", "Right Mean": "Right Mean 1"},
+                    inplace=True,
+                )
                 d1_df_both["Left Mean 2"] = d2_df_both["Left Mean"]
                 d1_df_both["Right Mean 2"] = d2_df_both["Right Mean"]
                 # connect d1_df_stats and d2_df_stats
                 # rename columns to avoid duplicates
-                d1_df_stats.rename(columns={"Maximum": "Maximum 1", "Minimum": "Minimum 1", "Range": "Range 1"}, inplace=True)
+                d1_df_stats.rename(
+                    columns={
+                        "Maximum": "Maximum 1",
+                        "Minimum": "Minimum 1",
+                        "Range": "Range 1",
+                    },
+                    inplace=True,
+                )
                 d1_df_stats["Maximum 2"] = d2_df_stats["Maximum"]
                 d1_df_stats["Minimum 2"] = d2_df_stats["Minimum"]
                 d1_df_stats["Range 2"] = d2_df_stats["Range"]
@@ -127,10 +136,14 @@ class Plot:
         params = [item[0] for item in d.data2plot]
         if param:
             index = params.index(param)
-            self.plot(param, d.data2plot[index][1], c.colors, c.size, "kinematics", src=src)
+            self.plot(
+                param, d.data2plot[index][1], c.colors, c.size, "kinematics", src=src
+            )
         else:
             # use multiselect to choose parameters to plot
-            self.params2plot = st.multiselect("You can choose multiple parameters to plot", params)
+            self.params2plot = st.multiselect(
+                "You can choose multiple parameters to plot", params
+            )
             for item in d.data2plot:
                 if item[0] in self.params2plot:
                     self.plot(item[0], item[1], c.colors, c.size, "kinematics", src="")
@@ -149,13 +162,17 @@ class Plot:
                 tools="pan, box_zoom, reset",
                 tooltips="[$name] @$name{0.00} at @{Gait cycle}%",  # [Mean] -0.77 at 33%
                 toolbar_location="above",
-                x_range=Range1d(start=0, end=100),  # Limit the x-axis, default (-5, 105)
+                x_range=Range1d(
+                    start=0, end=100
+                ),  # Limit the x-axis, default (-5, 105)
             )
             p.border_fill_color = "seashell"
             p.xaxis.axis_label_text_font_style = p.yaxis.axis_label_text_font_style = (
                 "normal"
             )
-            p.xaxis.axis_label_text_font_size = p.yaxis.axis_label_text_font_size = "14px"
+            p.xaxis.axis_label_text_font_size = p.yaxis.axis_label_text_font_size = (
+                "14px"
+            )
             p.toolbar.logo = None
             lines, labels = [], []
             for col in range(1, len(df.columns)):
@@ -219,7 +236,9 @@ class PlotCompare:
             x_range=Range1d(start=0, end=100),  # Limit the x-axis, default (-5, 105)
         )
         p.border_fill_color = "seashell"
-        p.xaxis.axis_label_text_font_style = p.yaxis.axis_label_text_font_style = "normal"
+        p.xaxis.axis_label_text_font_style = p.yaxis.axis_label_text_font_style = (
+            "normal"
+        )
         p.xaxis.axis_label_text_font_size = p.yaxis.axis_label_text_font_size = "14px"
         p.toolbar.logo = None
         lines, labels = [], []
