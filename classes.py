@@ -24,6 +24,22 @@ c = Config()
 
 
 class DataSet:
+    """
+    A class used to represent a DataSet for processing and plotting.
+
+    Attributes
+    ----------
+    data2plot : dict
+        a dictionary to store processed data for plotting
+
+    Methods
+    -------
+    process_dfs(file_pair):
+        Process data for left and right, add stats, return 4 dataframes.
+    process_data_file(file):
+        Load file, pre-process data, return a dataframe.
+    """
+
     def __init__(self, directory):
         file_pairs = []
         self.data2plot = {}
@@ -34,66 +50,61 @@ class DataSet:
             right_file = os.path.join(directory, item["right_file"])
             if os.path.isfile(left_file) and os.path.isfile(right_file):
                 file_pairs.append((item["name"], left_file, right_file))
-
-        def process_dfs(file_pair):
-            """Process data for left and right"""
-
-            def process_data_file(file):
-                """Load file, pre-process data, return dataframe"""
-
-                df = pd.read_csv(file, sep="\t")
-                # Now 'df' is a pandas DataFrame containing data from the file
-                # Remove first 4 text rows (headers)
-                df = df.drop(df.index[:4])
-                for col in df.columns:
-                    df[col] = pd.to_numeric(df[col], errors="coerce")
-                df.columns = df.columns.str.replace("Gait ", "")
-                df.columns = df.columns.str.replace(".c3d", "")
-                # The file's 1st col are numbers from 1 to 101
-                df.rename(columns={df.columns[0]: "Gait cycle"}, inplace=True)
-                df["Gait cycle"] -= 1
-                # Add average over dynamic walks as the last column
-                df1 = df.drop("Gait cycle", axis="columns")
-                try:
-                    df1 = df1.drop("Static", axis="columns")
-                except KeyError:  # ['Static.c3d'] not found (e.g., Moment)
-                    pass
-                df["Mean"] = df1.mean(numeric_only=True, axis=1)
-                return df
-
-            df_left = process_data_file(file_pair[1])
-            df_right = process_data_file(file_pair[2])
-            df_left.rename(columns={df_left.columns[-1]: "Left Mean"}, inplace=True)
-            df_right.rename(columns={df_right.columns[-1]: "Right Mean"}, inplace=True)
-            # combine Gait cycle and two Mean columns to plot both
-            df_both = pd.concat(
-                [df_left.iloc[:, :1], df_left.iloc[:, -1:], df_right.iloc[:, -1:]],
-                axis=1,
-            )
-
-            def stats(df, col):
-                idxmax = df[col].idxmax()
-                max = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
-                idxmin = df[col].idxmin()
-                min = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
-                range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.2f}"
-                return max, min, range
-
-            stats_left = stats(df_left, "Left Mean")
-            stats_right = stats(df_right, "Right Mean")
-            df_stats = pd.DataFrame(
-                {
-                    "Side": ["Left", "Right"],
-                    "Maximum": [stats_left[0], stats_right[0]],
-                    "Minimum": [stats_left[1], stats_right[1]],
-                    "Range": [stats_left[2], stats_right[2]],
-                }
-            )
-            return df_left, df_right, df_both, df_stats
-
         for file_pair in file_pairs:
-            self.data2plot[file_pair[0]] = process_dfs(file_pair)
+            self.data2plot[file_pair[0]] = self.process_dfs(file_pair)
         print(f"{len(self.data2plot)} pairs loaded")
+
+    def process_dfs(self, file_pair):
+        df_left = self.process_data_file(file_pair[1])
+        df_right = self.process_data_file(file_pair[2])
+        df_left.rename(columns={df_left.columns[-1]: "Left Mean"}, inplace=True)
+        df_right.rename(columns={df_right.columns[-1]: "Right Mean"}, inplace=True)
+        # combine Gait cycle and two Mean columns to plot both
+        df_both = pd.concat(
+            [df_left.iloc[:, :1], df_left.iloc[:, -1:], df_right.iloc[:, -1:]],
+            axis=1,
+        )
+
+        def stats(df, col):
+            idxmax = df[col].idxmax()
+            max = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
+            idxmin = df[col].idxmin()
+            min = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
+            range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.2f}"
+            return max, min, range
+
+        stats_left = stats(df_left, "Left Mean")
+        stats_right = stats(df_right, "Right Mean")
+        df_stats = pd.DataFrame(
+            {
+                "Side": ["Left", "Right"],
+                "Maximum": [stats_left[0], stats_right[0]],
+                "Minimum": [stats_left[1], stats_right[1]],
+                "Range": [stats_left[2], stats_right[2]],
+            }
+        )
+        return df_left, df_right, df_both, df_stats
+
+    def process_data_file(self, file):
+        df = pd.read_csv(file, sep="\t")
+        # Now 'df' is a pandas DataFrame containing data from the file
+        # Remove first 4 text rows (headers)
+        df = df.drop(df.index[:4])
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        df.columns = df.columns.str.replace("Gait ", "")
+        df.columns = df.columns.str.replace(".c3d", "")
+        # The file's 1st col are numbers from 1 to 101
+        df.rename(columns={df.columns[0]: "Gait cycle"}, inplace=True)
+        df["Gait cycle"] -= 1
+        # Add average over dynamic walks as the last column
+        df1 = df.drop("Gait cycle", axis="columns")
+        try:
+            df1 = df1.drop("Static", axis="columns")
+        except KeyError:  # ['Static.c3d'] not found (e.g., Moment)
+            pass
+        df["Mean"] = df1.mean(numeric_only=True, axis=1)
+        return df
 
 
 class DataCompare:
@@ -142,7 +153,23 @@ class DataCompare:
 
 
 class Figure:
-    """Create a figure for plotting"""
+    """
+    A class used to represent a Figure for plotting.
+
+    Attributes
+    ----------
+    figure : bokeh.plotting.figure
+        a figure object with various default attributes
+
+    Methods
+    -------
+    add_line(df, column, color, width, line_dash="solid"):
+        Adds a line to the figure.
+    add_legend(labels):
+        Adds a legend to the figure.
+    render():
+        Renders the figure as an HTML component.
+    """
 
     def __init__(self, x_label="Gait cycle, %", y_label="Angle, degrees"):
         self.figure = figure(
@@ -219,10 +246,7 @@ class Plot:
                 color = c.colors["mean"]
             else:
                 color = c.colors["color_list"][col - 1]
-            if "Mean" in column:
-                width = 3
-            else:
-                width = 1
+            width = 3 if "Mean" in column else 1
             line = fig.add_line(df, column, color, width)
             labels.append((column, [line]))
         fig.add_legend(labels)
@@ -232,53 +256,21 @@ class Plot:
 
 
 class PlotCompare:
+    """Plot the comparison of the two datasets"""
+
     def __init__(self, dc, param):
         self.plot_compare(dc.data2plot[param][0], dc.data2plot[param][1], param)
 
     def plot_compare(self, df_both, df_stats, param):
         st.header(f"{param}")
         st.dataframe(df_stats, hide_index=True)
-        p = figure(
-            x_axis_label="Gait cycle, %",
-            y_axis_label="Angle, degrees",
-            height=c.size["height"],
-            width=c.size["width"],
-            tools="pan, box_zoom, reset",
-            tooltips="[$name] @$name{0.00} at @{Gait cycle}%",  # [Mean] -0.77 at 33%
-            toolbar_location="above",
-            x_range=Range1d(start=0, end=100),  # Limit the x-axis, default (-5, 105)
-        )
-        p.border_fill_color = "seashell"
-        p.xaxis.axis_label_text_font_style = p.yaxis.axis_label_text_font_style = (
-            "normal"
-        )
-        p.xaxis.axis_label_text_font_size = p.yaxis.axis_label_text_font_size = "14px"
-        p.toolbar.logo = None
-        lines, labels = [], []
+        fig = Figure()
+        labels = []
         for col in range(1, len(df_both.columns)):
             column = df_both.columns[col]
             line_dash = "solid" if "Mean 1" in column else "dashed"
-            width = 2
             color = "blue" if "Left" in column else "red"
-            line = p.line(
-                "Gait cycle",
-                column,
-                source=ColumnDataSource(df_both),
-                color=color,
-                width=width,
-                name=column,
-                line_dash=line_dash,
-            )
-            lines.append(line)
+            line = fig.add_line(df_both, column, color, width=2, line_dash=line_dash)
             labels.append((column, [line]))
-        legend = Legend(items=labels)
-        legend.border_line_color = "black"
-        p.add_layout(legend, "right")
-        components.html(
-            file_html(
-                p,
-                "cdn",
-            ),
-            height=c.size["height"],
-            width=c.size["width"],
-        )
+        fig.add_legend(labels)
+        fig.render()
