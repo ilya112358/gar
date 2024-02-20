@@ -26,7 +26,7 @@ c = Config()
 class DataSet:
     def __init__(self, directory):
         file_pairs = []
-        self.data2plot = []
+        self.data2plot = {}
         with open(os.path.join(directory, "Info.txt"), "r") as f:
             self.info = f.read()
         for item in c.kinematics:
@@ -92,32 +92,42 @@ class DataSet:
             return df_left, df_right, df_both, df_stats
 
         for file_pair in file_pairs:
-            self.data2plot.append((file_pair[0], process_dfs(file_pair)))
+            self.data2plot[file_pair[0]] = process_dfs(file_pair)
         print(f"{len(self.data2plot)} pairs loaded")
 
 
 class DataCompare:
+    """
+    A class used to compare two datasets.
+
+    Attributes
+    ----------
+    data2plot : dict
+        A dictionary where the keys are the names of the data sets and the values are tuples.
+        Each tuple contains two dataframes: the first dataframe contains the "Left Mean" and "Right Mean"
+        values from both datasets, and the second dataframe contains the "Maximum", "Minimum", and "Range"
+        values from both datasets.
+    """
+
     def __init__(self, d1, d2):
         self.data2plot = {}
-        # TODO: change data2plot in DataSet to a dictionary
-        d2_data2plot = {item[0]: item[1] for item in d2.data2plot}
         for item in d1.data2plot:
-            if item[0] in d2_data2plot:
-                d1_df_both = item[1][2]
-                d2_df_both = d2_data2plot[item[0]][2]
-                d1_df_stats = item[1][3]
-                d2_df_stats = d2_data2plot[item[0]][3]
+            if item in d2.data2plot:
+                d_df_both = d1.data2plot[item][2].copy()
+                d2_df_both = d2.data2plot[item][2]
+                d_df_stats = d1.data2plot[item][3].copy()
+                d2_df_stats = d2.data2plot[item][3]
                 # connect d1_df_both and d2_df_both
                 # rename columns to avoid duplicates
-                d1_df_both.rename(
+                d_df_both.rename(
                     columns={"Left Mean": "Left Mean 1", "Right Mean": "Right Mean 1"},
                     inplace=True,
                 )
-                d1_df_both["Left Mean 2"] = d2_df_both["Left Mean"]
-                d1_df_both["Right Mean 2"] = d2_df_both["Right Mean"]
+                d_df_both["Left Mean 2"] = d2_df_both["Left Mean"]
+                d_df_both["Right Mean 2"] = d2_df_both["Right Mean"]
                 # connect d1_df_stats and d2_df_stats
                 # rename columns to avoid duplicates
-                d1_df_stats.rename(
+                d_df_stats.rename(
                     columns={
                         "Maximum": "Maximum 1",
                         "Minimum": "Minimum 1",
@@ -125,30 +135,24 @@ class DataCompare:
                     },
                     inplace=True,
                 )
-                d1_df_stats["Maximum 2"] = d2_df_stats["Maximum"]
-                d1_df_stats["Minimum 2"] = d2_df_stats["Minimum"]
-                d1_df_stats["Range 2"] = d2_df_stats["Range"]
-                self.data2plot[item[0]] = (d1_df_both, d1_df_stats)
+                d_df_stats["Maximum 2"] = d2_df_stats["Maximum"]
+                d_df_stats["Minimum 2"] = d2_df_stats["Minimum"]
+                d_df_stats["Range 2"] = d2_df_stats["Range"]
+                self.data2plot[item] = (d_df_both, d_df_stats)
 
 
 class Plot:
-    def __init__(self, d, param=None, src=None):
-        params = [item[0] for item in d.data2plot]
-        if param:
-            index = params.index(param)
-            self.plot(
-                param, d.data2plot[index][1], c.colors, c.size, "kinematics", src=src
-            )
-        else:
-            # use multiselect to choose parameters to plot
-            self.params2plot = st.multiselect(
-                "You can choose multiple parameters to plot", params
-            )
-            for item in d.data2plot:
-                if item[0] in self.params2plot:
-                    self.plot(item[0], item[1], c.colors, c.size, "kinematics", src="")
+    """Plot the data from the DataSet object"""
 
-    def plot(self, bioparameter, dfs, colors, size, kind, src):
+    def __init__(self, d):
+        params = list(d.data2plot.keys())
+        self.params2plot = st.multiselect(
+            "You can choose multiple parameters to plot", params
+        )
+        for param in self.params2plot:
+            self.plot(param, d.data2plot[param], c.colors, c.size, "kinematics")
+
+    def plot(self, bioparameter, dfs, colors, size, kind):
         def plot_df(df, lrb, kind):
             if kind == "kinematics":
                 y_label = "Angle, degrees"
@@ -209,12 +213,13 @@ class Plot:
                 width=size["width"],
             )
 
-        st.header(f"{bioparameter} {src}")
+        st.header(f"{bioparameter}")
         opts = ["Left", "Right", "Both"]
         foot2plot = st.radio(
-            f"Show plot for {bioparameter} {src}", opts, horizontal=True, index=2
+            f"Show plot for {bioparameter}", opts, horizontal=True, index=2
         )
         plot_df(dfs[opts.index(foot2plot)], foot2plot, kind)
+        st.markdown("###### Mean value statistics")
         st.dataframe(dfs[3], hide_index=True)
 
 
