@@ -83,6 +83,15 @@ right_file = "Right Pelvic Rotation.txt"
 #left_file = "Left GRF Z.txt"
 #right_file = "Right GRF Z.txt"
 
+[standard]
+layout = [
+    ["Pelvic Anterior Tilt", "Pelvic Up Obliquity", "Pelvic Internal Rotation"],
+    ["Hip Flexion", "Hip Adduction", "Hip Internal Rotation"],
+    ["Knee Flexion", "Knee Varus", "Knee Internal Rotation"],
+    ["Ankle Dorsiflexion", "Ankle Inversion", "Ankle Rotation"],
+    ["Foot Pitch", "", "Foot Internal Progression"]
+]
+
 [colors]
 static = "orange"
 mean = "black"

@@ -1,6 +1,7 @@
 from bokeh.embed import file_html
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, Legend, Range1d
+from bokeh.layouts import gridplot
+from bokeh.models import ColumnDataSource, Legend, Range1d, Label
 
 import os
 import pandas as pd
@@ -16,6 +17,7 @@ class Config:
         with open(self.__file, "r") as f:
             self.__config = toml.load(f)
         self.kinematics = self.__config["kinematics"]
+        self.layout = self.__config["standard"]["layout"]
         self.colors = self.__config["colors"]
         self.size = self.__config["size"]
 
@@ -171,12 +173,18 @@ class Figure:
         Renders the figure as an HTML component.
     """
 
-    def __init__(self, x_label="Gait cycle, %", y_label="Angle, degrees"):
+    def __init__(
+        self,
+        x_label="Gait cycle, %",
+        y_label="Angle, degrees",
+        height=c.size["height"],
+        width=c.size["width"],
+    ):
         self.figure = figure(
             x_axis_label=x_label,
             y_axis_label=y_label,
-            height=c.size["height"],
-            width=c.size["width"],
+            height=height,
+            width=width,
             tools="pan, box_zoom, reset",
             # will {Gait cycle} work for GRF?
             tooltips="[$name] @$name{0.00} at @{Gait cycle}%",  # [Mean] -0.77 at 33%
@@ -274,3 +282,50 @@ class PlotCompare:
             labels.append((column, [line]))
         fig.add_legend(labels)
         fig.render()
+
+
+class PlotLayout:
+    """Plot graphs in standard layout"""
+
+    def __init__(self, d):
+        figs = {}
+        for param, dfs in d.data2plot.items():
+            fig = Figure(height=400, width=500)
+            labels = []
+            df = dfs[2]  # both
+            for col in range(1, len(df.columns)):
+                column = df.columns[col]
+                color = c.colors["color_list"][col - 1]
+                width = 3
+                line = fig.add_line(df, column, color, width)
+                labels.append((column, [line]))
+            # fig.add_legend(labels)
+            figs[param] = fig
+
+        gridrows = []
+        for row in c.layout:
+            gridrow = []
+            for param in row:
+                if param in figs:
+                    gridrow.append(figs[param].figure)
+                else:
+                    empty = Figure(height=400, width=500)
+                    no_data_label = Label(
+                        x=200,
+                        y=200,
+                        x_units="screen",
+                        y_units="screen",
+                        text="No data",
+                    )
+                    empty.figure.add_layout(no_data_label)
+                    gridrow.append(empty.figure)
+            gridrows.append(gridrow)
+        grid = gridplot(gridrows)
+        components.html(
+            file_html(
+                grid,
+                "cdn",
+            ),
+            height=400 * len(c.layout) + 50,
+            width=500 * len(c.layout[0]),
+        )
