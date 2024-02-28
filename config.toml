@@ -119,5 +119,7 @@ color_list = [
 ]
 
 [size]
-height = 500
-width = 1000
+height = 600
+width = 1200
+small_height = 400
+small_width = 500

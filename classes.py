@@ -37,7 +37,7 @@ class DataSet:
     Methods
     -------
     process_dfs(file_pair):
-        Process data for left and right, add stats, return 4 dataframes.
+        Process data for the file pair, return 4 dataframes: left, right, both, stats.
     process_data_file(file):
         Load file, pre-process data, return a dataframe.
     """
@@ -288,20 +288,21 @@ class PlotLayout:
     """Plot graphs in standard layout"""
 
     def __init__(self, d):
+        height = c.size["small_height"]
+        width = c.size["small_width"]
         figs = {}
         for param, dfs in d.data2plot.items():
-            fig = Figure(height=400, width=500)
-            labels = []
+            fig = Figure(height=height, width=width)
             df = dfs[2]  # both
             for col in range(1, len(df.columns)):
                 column = df.columns[col]
                 color = c.colors["color_list"][col - 1]
-                width = 3
-                line = fig.add_line(df, column, color, width)
-                labels.append((column, [line]))
-            # fig.add_legend(labels)
+                fig.add_line(df, column, color, 2)
+            # TODO: add legend
+            fig.figure.title.text = param
+            fig.figure.title.text_font_size = "16px"
+            fig.figure.min_border_right = 20
             figs[param] = fig
-
         gridrows = []
         for row in c.layout:
             gridrow = []
@@ -309,10 +310,11 @@ class PlotLayout:
                 if param in figs:
                     gridrow.append(figs[param].figure)
                 else:
-                    empty = Figure(height=400, width=500)
+                    # empty plot with No data label
+                    empty = Figure(height=height, width=width)
                     no_data_label = Label(
-                        x=200,
-                        y=200,
+                        x=int(height/2),
+                        y=int(width/3),
                         x_units="screen",
                         y_units="screen",
                         text="No data",
@@ -320,12 +322,14 @@ class PlotLayout:
                     empty.figure.add_layout(no_data_label)
                     gridrow.append(empty.figure)
             gridrows.append(gridrow)
-        grid = gridplot(gridrows)
+        grid = gridplot(gridrows, merge_tools=False, toolbar_options=dict(logo=None))
         components.html(
             file_html(
+                # gridrows[0][0],
                 grid,
                 "cdn",
             ),
-            height=400 * len(c.layout) + 50,
-            width=500 * len(c.layout[0]),
+            # add some breathing space around the grid
+            height=height * len(c.layout),
+            width=width * len(c.layout[0]) + 50,
         )
