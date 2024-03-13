@@ -1,7 +1,7 @@
 from bokeh.embed import file_html
 from bokeh.plotting import figure
 from bokeh.layouts import gridplot
-from bokeh.models import ColumnDataSource, Legend, Range1d, Label
+from bokeh.models import ColumnDataSource, Legend, Range1d, Label, Band
 
 import os
 import pandas as pd
@@ -32,12 +32,15 @@ class DataSet:
     Attributes
     ----------
     data2plot : dict
-        a dictionary to store processed data for plotting
+        A dictionary to store processed data for plotting. 
+        Each key is a parameter name, and each value is a dictionary containing the processed dataframes
+        for left, right, both, stats, and optionally norm.
 
     Methods
     -------
     process_dfs(file_pair):
-        Process data for the file pair, return 4 dataframes: left, right, both, stats.
+        Process data for the file pair. Returns a dictionary containing five dataframes 
+        (or four plus None if norm is not present).
     process_data_file(file):
         Load file, pre-process data, return a dataframe.
     """
@@ -55,7 +58,7 @@ class DataSet:
                 if "norm_file" in item:
                     norm_file_path = os.path.join(directory, item["norm_file"])
                     if os.path.isfile(norm_file_path):
-                        norm_file = norm_file_path                
+                        norm_file = norm_file_path
                 file_pairs.append(
                     {
                         "name": item["name"],
@@ -81,7 +84,9 @@ class DataSet:
         if file_pair["norm"] is not None:
             df_norm = self.process_norm(file_pair["norm"])
             # print first 5 rows of the dataframe
-            print(df_norm.head())
+            # print(df_norm.head())
+        else:
+            df_norm = None
 
         def stats(df, col):
             idxmax = df[col].idxmax()
@@ -101,7 +106,13 @@ class DataSet:
                 "Range": [stats_left[2], stats_right[2]],
             }
         )
-        return df_left, df_right, df_both, df_stats
+        return {
+            "df_left": df_left,
+            "df_right": df_right,
+            "df_both": df_both,
+            "df_norm": df_norm,
+            "df_stats": df_stats,
+        }
 
     def process_data_file(self, file):
         df = pd.read_csv(file, sep="\t")
@@ -129,6 +140,13 @@ class DataSet:
         # Now 'df' is a pandas DataFrame containing data from the file
         for col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
+        df.drop(df.columns[[0, 2]], axis=1, inplace=True)  # remove File and 1
+        df.rename(
+            columns={df.columns[0]: "Gait cycle"}, inplace=True
+        )  # rename Frame to Gait cycle
+        df["Gait cycle"] -= 1
+        df.rename(columns={df.columns[1]: "Mean"}, inplace=True)  # rename 2 to Mean
+        df.rename(columns={df.columns[2]: "SD"}, inplace=True)  # rename 3 to SD
         return df
 
 
@@ -149,10 +167,10 @@ class DataCompare:
         self.data2plot = {}
         for item in d1.data2plot:
             if item in d2.data2plot:
-                d_df_both = d1.data2plot[item][2].copy()
-                d2_df_both = d2.data2plot[item][2]
-                d_df_stats = d1.data2plot[item][3].copy()
-                d2_df_stats = d2.data2plot[item][3]
+                d_df_both = d1.data2plot[item]["df_both"].copy()
+                d2_df_both = d2.data2plot[item]["df_both"]
+                d_df_stats = d1.data2plot[item]["df_stats"].copy()
+                d2_df_stats = d2.data2plot[item]["df_stats"]
                 # connect d1_df_both and d2_df_both
                 # rename columns to avoid duplicates
                 d_df_both.rename(
@@ -268,7 +286,7 @@ class Plot:
         )
         fig = Figure()
         labels = []
-        df = dfs[opts.index(foot2plot)]
+        df = dfs[{"Left": "df_left", "Right": "df_right", "Both": "df_both"}[foot2plot]]
         for col in range(1, len(df.columns)):
             column = df.columns[col]
             if column == "Static":
@@ -280,10 +298,24 @@ class Plot:
             width = 3 if "Mean" in column else 1
             line = fig.add_line(df, column, color, width)
             labels.append((column, [line]))
+        # Add gray band for df_norm
+        df_norm = dfs["df_norm"]
+        if df_norm is not None:
+            df_norm["Mean - SD"] = df_norm["Mean"] - df_norm["SD"]
+            df_norm["Mean + SD"] = df_norm["Mean"] + df_norm["SD"]
+            band = Band(
+                base="Gait cycle",
+                lower="Mean - SD",
+                upper="Mean + SD",
+                source=ColumnDataSource(df_norm),
+                fill_color="gray",
+                fill_alpha=0.25,
+            )
+            fig.figure.add_layout(band)
         fig.add_legend(labels)
         fig.render()
         st.markdown("###### Mean value statistics")
-        st.dataframe(dfs[3], hide_index=True)
+        st.dataframe(dfs["df_stats"], hide_index=True)
 
 
 class PlotCompare:
@@ -316,7 +348,7 @@ class PlotLayout:
         figs = {}
         for param, dfs in d.data2plot.items():
             fig = Figure(height=height, width=width)
-            df = dfs[2]  # both
+            df = dfs["df_both"]
             for col in range(1, len(df.columns)):
                 column = df.columns[col]
                 color = c.colors["color_list"][col - 1]
