@@ -2,6 +2,7 @@
 name = "Ankle Dorsiflexion"
 left_file = "Left Ankle Angles.txt"
 right_file = "Right Ankle Angles.txt"
+norm_file = "Ankle Angles X.txt"
 
 [[kinematics]]
 name = "Ankle Inversion"

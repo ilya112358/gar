@@ -43,22 +43,34 @@ class DataSet:
     """
 
     def __init__(self, directory):
-        file_pairs = []
-        self.data2plot = {}
+        file_pairs = []  # list of dictionaries
+        self.data2plot = {}  # dictionary to store processed data for plotting
         with open(os.path.join(directory, "Info.txt"), "r") as f:
             self.info = f.read()
         for item in c.kinematics:
             left_file = os.path.join(directory, item["left_file"])
             right_file = os.path.join(directory, item["right_file"])
             if os.path.isfile(left_file) and os.path.isfile(right_file):
-                file_pairs.append((item["name"], left_file, right_file))
+                norm_file = None
+                if "norm_file" in item:
+                    norm_file_path = os.path.join(directory, item["norm_file"])
+                    if os.path.isfile(norm_file_path):
+                        norm_file = norm_file_path                
+                file_pairs.append(
+                    {
+                        "name": item["name"],
+                        "left": left_file,
+                        "right": right_file,
+                        "norm": norm_file,
+                    }
+                )
         for file_pair in file_pairs:
-            self.data2plot[file_pair[0]] = self.process_dfs(file_pair)
-        print(f"{len(self.data2plot)} pairs loaded")
+            self.data2plot[file_pair["name"]] = self.process_dfs(file_pair)
+        # print(f"{len(self.data2plot)} pairs loaded")
 
     def process_dfs(self, file_pair):
-        df_left = self.process_data_file(file_pair[1])
-        df_right = self.process_data_file(file_pair[2])
+        df_left = self.process_data_file(file_pair["left"])
+        df_right = self.process_data_file(file_pair["right"])
         df_left.rename(columns={df_left.columns[-1]: "Left Mean"}, inplace=True)
         df_right.rename(columns={df_right.columns[-1]: "Right Mean"}, inplace=True)
         # combine Gait cycle and two Mean columns to plot both
@@ -66,6 +78,10 @@ class DataSet:
             [df_left.iloc[:, :1], df_left.iloc[:, -1:], df_right.iloc[:, -1:]],
             axis=1,
         )
+        if file_pair["norm"] is not None:
+            df_norm = self.process_norm(file_pair["norm"])
+            # print first 5 rows of the dataframe
+            print(df_norm.head())
 
         def stats(df, col):
             idxmax = df[col].idxmax()
@@ -106,6 +122,13 @@ class DataSet:
         except KeyError:  # ['Static.c3d'] not found (e.g., Moment)
             pass
         df["Mean"] = df1.mean(numeric_only=True, axis=1)
+        return df
+
+    def process_norm(self, file):
+        df = pd.read_csv(file, sep="\t")
+        # Now 'df' is a pandas DataFrame containing data from the file
+        for col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
         return df
 
 
@@ -313,8 +336,8 @@ class PlotLayout:
                     # empty plot with No data label
                     empty = Figure(height=height, width=width)
                     no_data_label = Label(
-                        x=int(height/2),
-                        y=int(width/3),
+                        x=int(height / 2),
+                        y=int(width / 3),
                         x_units="screen",
                         y_units="screen",
                         text="No data",
