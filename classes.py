@@ -65,6 +65,7 @@ class DataSet:
                         "left": left_file,
                         "right": right_file,
                         "norm": norm_file,
+                        "y_axis": item["y_axis"] if "y_axis" in item else None,
                     }
                 )
         for file_pair in file_pairs:
@@ -90,11 +91,13 @@ class DataSet:
 
         def stats(df, col):
             idxmax = df[col].idxmax()
-            max = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
+            maxtxt = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
             idxmin = df[col].idxmin()
-            min = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
+            mintxt = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
             range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.2f}"
-            return max, min, range
+            file_pair["y_axis"][0] = min(df[col].min(), file_pair["y_axis"][0])
+            file_pair["y_axis"][1] = max(df[col].max(), file_pair["y_axis"][1])
+            return maxtxt, mintxt, range
 
         stats_left = stats(df_left, "Left Mean")
         stats_right = stats(df_right, "Right Mean")
@@ -112,6 +115,7 @@ class DataSet:
             "df_both": df_both,
             "df_norm": df_norm,
             "df_stats": df_stats,
+            "y_axis": file_pair["y_axis"],
         }
 
     def process_data_file(self, file):
@@ -137,7 +141,6 @@ class DataSet:
 
     def process_norm(self, file):
         df = pd.read_csv(file, sep="\t")
-        # Now 'df' is a pandas DataFrame containing data from the file
         df = df.drop(df.index[:4])
         for col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
@@ -190,7 +193,7 @@ class DataCompare:
                 d_df_stats["Maximum 2"] = d2_df_stats["Maximum"]
                 d_df_stats["Minimum 2"] = d2_df_stats["Minimum"]
                 d_df_stats["Range 2"] = d2_df_stats["Range"]
-                self.data2plot[item] = (d_df_both, d_df_stats)
+                self.data2plot[item] = {"df_both": d_df_both, "df_stats": d_df_stats}
 
 
 class Figure:
@@ -206,6 +209,8 @@ class Figure:
     -------
     add_line(df, column, color, width, line_dash="solid"):
         Adds a line to the figure.
+    add_band(df_norm):
+        Adds a gray band to the figure.
     add_legend(labels):
         Adds a legend to the figure.
     render():
@@ -214,6 +219,7 @@ class Figure:
 
     def __init__(
         self,
+        y_axis=None,
         x_label="Gait cycle, %",
         y_label="Angle, degrees",
         height=c.size["height"],
@@ -228,8 +234,10 @@ class Figure:
             # will {Gait cycle} work for GRF?
             tooltips="[$name] @$name{0.00} at @{Gait cycle}%",  # [Mean] -0.77 at 33%
             toolbar_location="above",
-            x_range=Range1d(start=0, end=100),  # Limit the x-axis, default (-5, 105)
+            x_range=(0, 100),  # Limit the x-axis, default (-5, 105)
         )
+        if y_axis is not None:
+            self.figure.y_range = Range1d(y_axis[0], y_axis[1])
         self.figure.border_fill_color = "seashell"
         self.figure.xaxis.axis_label_text_font_style = "normal"
         self.figure.yaxis.axis_label_text_font_style = "normal"
@@ -248,6 +256,19 @@ class Figure:
             line_dash=line_dash,
         )
         return line
+
+    def add_band(self, df_norm):
+        df_norm["Mean - SD"] = df_norm["Mean"] - df_norm["SD"]
+        df_norm["Mean + SD"] = df_norm["Mean"] + df_norm["SD"]
+        band = Band(
+            base="Gait cycle",
+            lower="Mean - SD",
+            upper="Mean + SD",
+            source=ColumnDataSource(df_norm),
+            fill_color="gray",
+            fill_alpha=0.25,
+        )
+        self.figure.add_layout(band)
 
     def add_legend(self, labels):
         legend = Legend(items=labels)
@@ -282,7 +303,7 @@ class Plot:
         foot2plot = st.radio(
             f"Show plot for {bioparameter}", opts, horizontal=True, index=2
         )
-        fig = Figure()
+        fig = Figure(y_axis=dfs["y_axis"])
         labels = []
         df = dfs[{"Left": "df_left", "Right": "df_right", "Both": "df_both"}[foot2plot]]
         for col in range(1, len(df.columns)):
@@ -296,45 +317,13 @@ class Plot:
             width = 3 if "Mean" in column else 1
             line = fig.add_line(df, column, color, width)
             labels.append((column, [line]))
-        # Add gray band for df_norm
         df_norm = dfs["df_norm"]
         if df_norm is not None:
-            df_norm["Mean - SD"] = df_norm["Mean"] - df_norm["SD"]
-            df_norm["Mean + SD"] = df_norm["Mean"] + df_norm["SD"]
-            band = Band(
-                base="Gait cycle",
-                lower="Mean - SD",
-                upper="Mean + SD",
-                source=ColumnDataSource(df_norm),
-                fill_color="gray",
-                fill_alpha=0.25,
-            )
-            fig.figure.add_layout(band)
+            fig.add_band(df_norm)
         fig.add_legend(labels)
         fig.render()
         st.markdown("###### Mean value statistics")
         st.dataframe(dfs["df_stats"], hide_index=True)
-
-
-class PlotCompare:
-    """Plot the comparison of the two datasets"""
-
-    def __init__(self, dc, param):
-        self.plot_compare(dc.data2plot[param][0], dc.data2plot[param][1], param)
-
-    def plot_compare(self, df_both, df_stats, param):
-        st.header(f"{param}")
-        st.dataframe(df_stats, hide_index=True)
-        fig = Figure()
-        labels = []
-        for col in range(1, len(df_both.columns)):
-            column = df_both.columns[col]
-            line_dash = "solid" if "Mean 1" in column else "dashed"
-            color = "blue" if "Left" in column else "red"
-            line = fig.add_line(df_both, column, color, width=2, line_dash=line_dash)
-            labels.append((column, [line]))
-        fig.add_legend(labels)
-        fig.render()
 
 
 class PlotLayout:
@@ -345,13 +334,15 @@ class PlotLayout:
         width = c.size["small_width"]
         figs = {}
         for param, dfs in d.data2plot.items():
-            fig = Figure(height=height, width=width)
+            fig = Figure(height=height, width=width, y_axis=dfs["y_axis"])
             df = dfs["df_both"]
             for col in range(1, len(df.columns)):
                 column = df.columns[col]
                 color = c.colors["color_list"][col - 1]
                 fig.add_line(df, column, color, 2)
-            # TODO: add legend
+            df_norm = dfs["df_norm"]
+            if df_norm is not None:
+                fig.add_band(df_norm)
             fig.figure.title.text = param
             fig.figure.title.text_font_size = "16px"
             fig.figure.min_border_right = 20
@@ -386,3 +377,24 @@ class PlotLayout:
             height=height * len(c.layout),
             width=width * len(c.layout[0]) + 50,
         )
+
+
+class PlotCompare:
+    """Plot the comparison of the two datasets"""
+
+    def __init__(self, dc, param):
+        self.plot_compare(dc.data2plot[param]["df_both"], dc.data2plot[param]["df_stats"], param)
+
+    def plot_compare(self, df_both, df_stats, param):
+        st.header(f"{param}")
+        st.dataframe(df_stats, hide_index=True)
+        fig = Figure()
+        labels = []
+        for col in range(1, len(df_both.columns)):
+            column = df_both.columns[col]
+            line_dash = "solid" if "Mean 1" in column else "dashed"
+            color = "blue" if "Left" in column else "red"
+            line = fig.add_line(df_both, column, color, width=2, line_dash=line_dash)
+            labels.append((column, [line]))
+        fig.add_legend(labels)
+        fig.render()

@@ -3,84 +3,98 @@ name = "Ankle Dorsiflexion"
 left_file = "Left Ankle Angles.txt"
 right_file = "Right Ankle Angles.txt"
 norm_file = "Norm Ankle Angles X.txt"
+y_axis = [-30, 30]
 
 [[kinematics]]
 name = "Ankle Inversion"
 left_file = "Left Ankle Inversion.txt"
 right_file = "Right Ankle Inversion.txt"
 norm_file = "Norm Ankle Angles Y.txt"
+y_axis = [-20, 20]
 
 [[kinematics]]
 name = "Ankle Rotation"
 left_file = "Left Ankle Rotation.txt"
 right_file = "Right Ankle Rotation.txt"
 norm_file = "Norm Ankle Angles Z.txt"
+y_axis = [-30, 30]
 
 [[kinematics]]
 name = "Foot Pitch"
 left_file = "Left Foot Pitch Angles.txt"
 right_file = "Right Foot Pitch Angles.txt"
 norm_file = "Norm Foot Pitch.txt"
+y_axis = [-90, 30]
 
 [[kinematics]]
 name = "Foot Internal Progression"
 left_file = "Left Foot Progression.txt"
 right_file = "Right Foot Progression.txt"
 norm_file = "Norm Foot Progression.txt"
+y_axis = [-45, 15]
 
 [[kinematics]]
 name = "Knee Flexion"
 left_file = "Left Knee Angles.txt"
 right_file = "Right Knee Angles.txt"
 norm_file = "Norm Knee Angles X.txt"
+y_axis = [-15, 75]
 
 [[kinematics]]
 name = "Knee Varus"
 left_file = "Left Knee Adduction.txt"
 right_file = "Right Knee Adduction.txt"
 norm_file = "Norm Knee Angles Y.txt"
+y_axis = [-20, 20]
 
 [[kinematics]]
 name = "Knee Internal Rotation"
 left_file = "Left Knee Rotation.txt"
 right_file = "Right Knee Rotation.txt"
 norm_file = "Norm Knee Angles Z.txt"
+y_axis = [-50, 10]
 
 [[kinematics]]
 name = "Hip Flexion"
 left_file = "Left Hip Angles.txt"
 right_file = "Right Hip Angles.txt"
 norm_file = "Norm Hip Angles X.txt"
+y_axis = [-30, 60]
 
 [[kinematics]]
 name = "Hip Adduction"
 left_file = "Left Hip Adduction.txt"
 right_file = "Right Hip Adduction.txt"
 norm_file = "Norm Hip Angles Y.txt"
+y_axis = [-20, 20]
 
 [[kinematics]]
 name = "Hip Internal Rotation"
 left_file = "Left Hip Rotation.txt"
 right_file = "Right Hip Rotation.txt"
 norm_file = "Norm Hip Angles Z.txt"
+y_axis = [-30, 30]
 
 [[kinematics]]
 name = "Pelvic Anterior Tilt"
 left_file = "Left Pelvic Tilt.txt"
 right_file = "Right Pelvic Tilt.txt"
 norm_file = "Norm Pelvic Angles X.txt"
+y_axis = [-10, 20]
 
 [[kinematics]]
 name = "Pelvic Up Obliquity"
 left_file = "Left Pelvic Obliquity.txt"
 right_file = "Right Pelvic Obliquity.txt"
 norm_file = "Norm Pelvic Angles Y.txt"
+y_axis = [-15, 15]
 
 [[kinematics]]
 name = "Pelvic Internal Rotation"
 left_file = "Left Pelvic Rotation.txt"
 right_file = "Right Pelvic Rotation.txt"
 norm_file = "Norm Pelvic Angles Z.txt"
+y_axis = [-15, 15]
 
 #[[kinetics]]
 #name = "Anterior GRF"
@@ -135,5 +149,5 @@ color_list = [
 [size]
 height = 600
 width = 1200
-small_height = 400
-small_width = 500
+small_height = 300
+small_width = 450
