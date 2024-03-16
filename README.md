@@ -3,4 +3,4 @@
 
 Dashboard to analyze gait-related biomechanical data.
 
-Oct 2023 - Feb 2024
+Oct 2023 - Mar 2024

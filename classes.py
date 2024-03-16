@@ -138,15 +138,13 @@ class DataSet:
     def process_norm(self, file):
         df = pd.read_csv(file, sep="\t")
         # Now 'df' is a pandas DataFrame containing data from the file
+        df = df.drop(df.index[:4])
         for col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
-        df.drop(df.columns[[0, 2]], axis=1, inplace=True)  # remove File and 1
-        df.rename(
-            columns={df.columns[0]: "Gait cycle"}, inplace=True
-        )  # rename Frame to Gait cycle
+        df.rename(columns={df.columns[0]: "Gait cycle"}, inplace=True)
         df["Gait cycle"] -= 1
-        df.rename(columns={df.columns[1]: "Mean"}, inplace=True)  # rename 2 to Mean
-        df.rename(columns={df.columns[2]: "SD"}, inplace=True)  # rename 3 to SD
+        df.rename(columns={df.columns[1]: "Mean"}, inplace=True)
+        df.rename(columns={df.columns[2]: "SD"}, inplace=True)
         return df
 
 
