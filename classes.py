@@ -90,7 +90,7 @@ class DataSet:
             df_norm = self.process_norm(file_pair["norm"])
         else:
             df_norm = None
-        df_stats = self.create_df_stats(df_left, df_right)
+        df_stats = DataSet.create_df_stats(df_left, df_right)
         # y_axis is a list of min and max values for the y-axis
         y_axis = [
             min(
@@ -145,7 +145,16 @@ class DataSet:
         df.rename(columns={df.columns[2]: "SD"}, inplace=True)
         return df
 
-    def create_df_stats(self, df_left, df_right):
+    @classmethod
+    def create_df_stats(cls, df_left, df_right, frames=(0, 100)):
+        df_left = df_left.loc[
+            (df_left["Gait cycle"] >= frames[0]) & (df_left["Gait cycle"] <= frames[1])
+        ]
+        df_right = df_right.loc[
+            (df_right["Gait cycle"] >= frames[0])
+            & (df_right["Gait cycle"] <= frames[1])
+        ]
+
         def stats(df, col):
             idxmax = df[col].idxmax()
             maxtxt = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
@@ -158,10 +167,11 @@ class DataSet:
         stats_right = stats(df_right, "Right Mean")
         df_stats = pd.DataFrame(
             {
+                "Frames": [frames[0], frames[1]],
                 "Side": ["Left", "Right"],
                 "Maximum": [stats_left[0], stats_right[0]],
                 "Minimum": [stats_left[1], stats_right[1]],
-                "Range": [stats_left[2], stats_right[2]],
+                "Range Of Motion": [stats_left[2], stats_right[2]],
             }
         )
         return df_stats
@@ -339,7 +349,16 @@ class Plot:
         fig.add_legend(labels)
         fig.render()
         st.markdown("###### Mean value statistics")
-        st.dataframe(dfs["df_stats"], hide_index=True)
+        frames = st.slider(
+            f"Select a range of gate cycle for {bioparameter} frames from 0 to 100",
+            0,
+            100,
+            (0, 100),
+        )
+        df_stats = DataSet.create_df_stats(
+            dfs["df_left"], dfs["df_right"], frames=frames
+        )
+        st.dataframe(df_stats, hide_index=True)
 
 
 class PlotLayout:
