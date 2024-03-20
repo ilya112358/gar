@@ -32,17 +32,21 @@ class DataSet:
     Attributes
     ----------
     data2plot : dict
-        A dictionary to store processed data for plotting. 
+        A dictionary to store processed data for plotting.
         Each key is a parameter name, and each value is a dictionary containing the processed dataframes
         for left, right, both, stats, and optionally norm.
 
     Methods
     -------
-    process_dfs(file_pair):
-        Process data for the file pair. Returns a dictionary containing five dataframes 
+    process_dfs(self, file_pair):
+        Process data for the file pair. Returns a dictionary containing five dataframes
         (or four plus None if norm is not present).
-    process_data_file(file):
+    process_data_file(self, file):
         Load file, pre-process data, return a dataframe.
+    process_norm(self, file):
+        Load norm file, pre-process data, return a dataframe.
+    create_df_stats(self, df_left, df_right):
+        Create a dataframe with statistics for the left and right dataframes.
     """
 
     def __init__(self, directory):
@@ -84,38 +88,29 @@ class DataSet:
         )
         if file_pair["norm"] is not None:
             df_norm = self.process_norm(file_pair["norm"])
-            # print first 5 rows of the dataframe
-            # print(df_norm.head())
         else:
             df_norm = None
-
-        def stats(df, col):
-            idxmax = df[col].idxmax()
-            maxtxt = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
-            idxmin = df[col].idxmin()
-            mintxt = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
-            range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.2f}"
-            file_pair["y_axis"][0] = min(df[col].min(), file_pair["y_axis"][0])
-            file_pair["y_axis"][1] = max(df[col].max(), file_pair["y_axis"][1])
-            return maxtxt, mintxt, range
-
-        stats_left = stats(df_left, "Left Mean")
-        stats_right = stats(df_right, "Right Mean")
-        df_stats = pd.DataFrame(
-            {
-                "Side": ["Left", "Right"],
-                "Maximum": [stats_left[0], stats_right[0]],
-                "Minimum": [stats_left[1], stats_right[1]],
-                "Range": [stats_left[2], stats_right[2]],
-            }
-        )
+        df_stats = self.create_df_stats(df_left, df_right)
+        # y_axis is a list of min and max values for the y-axis
+        y_axis = [
+            min(
+                df_left["Left Mean"].min(),
+                df_right["Right Mean"].min(),
+                file_pair["y_axis"][0],
+            ),
+            max(
+                df_left["Left Mean"].max(),
+                df_right["Right Mean"].max(),
+                file_pair["y_axis"][1],
+            ),
+        ]
         return {
             "df_left": df_left,
             "df_right": df_right,
             "df_both": df_both,
             "df_norm": df_norm,
             "df_stats": df_stats,
-            "y_axis": file_pair["y_axis"],
+            "y_axis": y_axis,
         }
 
     def process_data_file(self, file):
@@ -149,6 +144,27 @@ class DataSet:
         df.rename(columns={df.columns[1]: "Mean"}, inplace=True)
         df.rename(columns={df.columns[2]: "SD"}, inplace=True)
         return df
+
+    def create_df_stats(self, df_left, df_right):
+        def stats(df, col):
+            idxmax = df[col].idxmax()
+            maxtxt = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
+            idxmin = df[col].idxmin()
+            mintxt = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
+            range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.2f}"
+            return maxtxt, mintxt, range
+
+        stats_left = stats(df_left, "Left Mean")
+        stats_right = stats(df_right, "Right Mean")
+        df_stats = pd.DataFrame(
+            {
+                "Side": ["Left", "Right"],
+                "Maximum": [stats_left[0], stats_right[0]],
+                "Minimum": [stats_left[1], stats_right[1]],
+                "Range": [stats_left[2], stats_right[2]],
+            }
+        )
+        return df_stats
 
 
 class DataCompare:
@@ -383,7 +399,9 @@ class PlotCompare:
     """Plot the comparison of the two datasets"""
 
     def __init__(self, dc, param):
-        self.plot_compare(dc.data2plot[param]["df_both"], dc.data2plot[param]["df_stats"], param)
+        self.plot_compare(
+            dc.data2plot[param]["df_both"], dc.data2plot[param]["df_stats"], param
+        )
 
     def plot_compare(self, df_both, df_stats, param):
         st.header(f"{param}")
