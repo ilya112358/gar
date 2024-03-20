@@ -157,10 +157,10 @@ class DataSet:
 
         def stats(df, col):
             idxmax = df[col].idxmax()
-            maxtxt = f"{df.loc[idxmax, col]:.2f} at {df.loc[idxmax, 'Gait cycle']}%"
+            maxtxt = f"{df.loc[idxmax, col]:.1f} at {df.loc[idxmax, 'Gait cycle']}%"
             idxmin = df[col].idxmin()
-            mintxt = f"{df.loc[idxmin, col]:.2f} at {df.loc[idxmin, 'Gait cycle']}%"
-            range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.2f}"
+            mintxt = f"{df.loc[idxmin, col]:.1f} at {df.loc[idxmin, 'Gait cycle']}%"
+            range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.1f}"
             return maxtxt, mintxt, range
 
         stats_left = stats(df_left, "Left Mean")
@@ -350,7 +350,7 @@ class Plot:
         fig.render()
         st.markdown("###### Mean value statistics")
         frames = st.slider(
-            f"Select a range of gate cycle for {bioparameter} frames from 0 to 100",
+            f"Select a range of gate cycle frames from 0 to 100 for {bioparameter}",
             0,
             100,
             (0, 100),
