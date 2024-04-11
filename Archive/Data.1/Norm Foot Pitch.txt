@@ -1,5 +1,5 @@
 	GLOBAL	GLOBAL
-	Right Foot Progression_X_RHS_RHS	Right Foot Progression_X_RHS_RHS
+	Right Foot Pitch Angles_X_RHS_RHS	Right Foot Pitch Angles_X_RHS_RHS
 	P2D	P2D
 	PROCESSED	PROCESSED
 ITEM	1	2

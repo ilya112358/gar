@@ -52,8 +52,7 @@ class DataSet:
     def __init__(self, directory):
         file_pairs = []  # list of dictionaries
         self.data2plot = {}  # dictionary to store processed data for plotting
-        with open(os.path.join(directory, "Info.txt"), "r") as f:
-            self.info = f.read()
+        self.info = self.process_info(os.path.join(directory, "Info.txt"))
         for item in c.kinematics:
             left_file = os.path.join(directory, item["left_file"])
             right_file = os.path.join(directory, item["right_file"])
@@ -75,6 +74,15 @@ class DataSet:
         for file_pair in file_pairs:
             self.data2plot[file_pair["name"]] = self.process_dfs(file_pair)
         # print(f"{len(self.data2plot)} pairs loaded")
+
+    def process_info(self, file):
+        df = pd.read_csv(file, sep="\t")
+        # Now 'df' is a pandas DataFrame containing data from the file
+        # Remove first col (index), use first row as keys, fifth as values
+        df = df.iloc[:, 1:]
+        keys = df.loc[0].tolist()
+        values = df.loc[4].tolist()
+        return dict(zip(keys, values))
 
     def process_dfs(self, file_pair):
         df_left = self.process_data_file(file_pair["left"])
