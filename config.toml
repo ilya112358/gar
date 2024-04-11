@@ -151,3 +151,18 @@ height = 600
 width = 1200
 small_height = 300
 small_width = 450
+
+[phases]
+names = [
+    "Full Cycle",
+    "Stance Phase", 
+    "Initial Contact", 
+    "Loading Response", 
+    "Midstance", 
+    "Terminal Stance", 
+    "Pre-swing", 
+    "Swing Phase",
+    "Initial Swing", 
+    "Midswing", 
+    "Terminal Swing"]
+ranges = [[0, 100], [0, 60], [0, 2], [2, 10], [10, 30], [30, 50], [50, 60], [60, 100], [60, 73], [73, 87], [87, 100]]
