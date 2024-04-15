@@ -362,27 +362,11 @@ class Plot:
         fig.add_legend(labels)
         fig.render()
         st.markdown("###### Mean value statistics")
-        st.markdown(
-            "Table below shows maximum, minimum and range of motion during chosen gait cycle phase."
-        )
-        # st.markdown("You can select specific phase or choose the range manually.")
-        # phase = st.selectbox(
-        #     f"Select specific phase for {bioparameter}",
-        #     list(c.phases.keys()),
-        #     format_func=lambda phase: f"{phase} {c.phases[phase][0]}% - {c.phases[phase][1]}%",
-        # )
-        # frame_range = c.phases[phase]
-        frames = st.slider(
-            f"Select a range of gate cycle frames from 0 to 100 for {bioparameter}",
-            0,
-            100,
-            (0, 100),
-        )
+        st.markdown("Table below shows maximum, minimum and range of motion during chosen gait cycle phase.")
+        frames = st.slider(f"Select a range of gate cycle frames from 0 to 100 for {bioparameter}", 0, 100, (0, 100))
         df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], frames=frames)
         st.dataframe(df_stats, hide_index=True)
-        item_iterator = iter(c.phases.items())
-        for col in st.columns(len(c.phases)):
-            key, value = next(item_iterator)
+        for col, (key, value) in zip(st.columns(len(c.phases)), c.phases.items()):
             with col:
                 st.markdown(f"{key}")
                 df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], frames=value)
