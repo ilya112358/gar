@@ -168,9 +168,11 @@ class DataSet:
 
         def stats(df, col):
             idxmax = df[col].idxmax()
-            maxtxt = f"{df.loc[idxmax, col]:.1f} at {df.loc[idxmax, 'Gait cycle']}%"
+            # maxtxt = f"{df.loc[idxmax, col]:.1f} at {df.loc[idxmax, 'Gait cycle']}%"
+            maxtxt = f"{df.loc[idxmax, col]:.1f}"
             idxmin = df[col].idxmin()
-            mintxt = f"{df.loc[idxmin, col]:.1f} at {df.loc[idxmin, 'Gait cycle']}%"
+            # mintxt = f"{df.loc[idxmin, col]:.1f} at {df.loc[idxmin, 'Gait cycle']}%"
+            mintxt = f"{df.loc[idxmin, col]:.1f}"
             range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.1f}"
             return maxtxt, mintxt, range
 
@@ -178,11 +180,11 @@ class DataSet:
         stats_right = stats(df_right, "Right Mean")
         df_stats = pd.DataFrame(
             {
-                "Frames": [frames[0], frames[1]],
+                "G.c.,%": [frames[0], frames[1]],
                 "Side": ["Left", "Right"],
-                "Maximum": [stats_left[0], stats_right[0]],
-                "Minimum": [stats_left[1], stats_right[1]],
-                "Range Of Motion": [stats_left[2], stats_right[2]],
+                "Max": [stats_left[0], stats_right[0]],
+                "Min": [stats_left[1], stats_right[1]],
+                "ROM": [stats_left[2], stats_right[2]],
             }
         )
         return df_stats
@@ -360,26 +362,23 @@ class Plot:
         fig.add_legend(labels)
         fig.render()
         st.markdown("###### Mean value statistics")
-        st.markdown(
-            "Table below shows maximum, minimum and range of motion during chosen gait cycle phase."
-        )
-        st.markdown("You can select specific phase or choose the range manually.")
-        phase = st.selectbox(
-            f"Select specific phase for {bioparameter}",
-            list(c.phases.keys()),
-            format_func=lambda phase: f"{phase} {c.phases[phase][0]}% - {c.phases[phase][1]}%",
-        )
-        frame_range = c.phases[phase]
-        frames = st.slider(
-            f"Select a range of gate cycle frames from 0 to 100 for {bioparameter}",
-            0,
-            100,
-            frame_range,
-        )
-        df_stats = DataSet.create_df_stats(
-            dfs["df_left"], dfs["df_right"], frames=frames
-        )
-        st.dataframe(df_stats, hide_index=True)
+        st.markdown("Table below shows maximum, minimum and range of motion during main gait cycle phases.")
+        # Create a combined DataFrame for all phases
+        df_combined = pd.DataFrame()
+        for key, value in c.phases.items():
+            df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], frames=value)
+            df_stats.insert(0, 'Phase', key)
+            df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
+        st.dataframe(df_combined, hide_index=True)
+
+        # frames = st.slider(f"Select a range of gate cycle frames from 0 to 100 for {bioparameter}", 0, 100, (0, 100))
+        # df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], frames=frames)
+        # st.dataframe(df_stats, hide_index=True)
+        # for col, (key, value) in zip(st.columns(len(c.phases)), c.phases.items()):
+        #     with col:
+        #         st.markdown(f"{key}")
+        #         df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], frames=value)
+        #         st.dataframe(df_stats, hide_index=True)
 
 
 class PlotLayout:
