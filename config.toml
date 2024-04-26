@@ -167,8 +167,9 @@ small_width = 450
 #     "Terminal Swing"]
 # ranges = [[0, 100], [0, 60], [0, 2], [2, 10], [10, 30], [30, 50], [50, 60], [60, 100], [60, 73], [73, 87], [87, 100]]
 names = [
-    "Full Cycle",
+    "Loading Response",     
     "Stance Phase", 
-    "Swing Phase"
+    "Swing Phase",
+    "Full Cycle"
 ]
-ranges = [[0, 100], [0, 60], [60, 100]]
+ranges = [[0, 10], [0, 60], [60, 100], [0, 100]]
