@@ -9,6 +9,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import toml
 
+from io import BytesIO
 
 class Config:
     __file = "config.toml"
@@ -162,19 +163,16 @@ class DataSet:
             (df_left["Gait cycle"] >= frames[0]) & (df_left["Gait cycle"] <= frames[1])
         ]
         df_right = df_right.loc[
-            (df_right["Gait cycle"] >= frames[0])
-            & (df_right["Gait cycle"] <= frames[1])
+            (df_right["Gait cycle"] >= frames[0]) & (df_right["Gait cycle"] <= frames[1])
         ]
 
         def stats(df, col):
             idxmax = df[col].idxmax()
-            # maxtxt = f"{df.loc[idxmax, col]:.1f} at {df.loc[idxmax, 'Gait cycle']}%"
-            maxtxt = f"{df.loc[idxmax, col]:.1f}"
+            mx = round(df.loc[idxmax, col], 1)
             idxmin = df[col].idxmin()
-            # mintxt = f"{df.loc[idxmin, col]:.1f} at {df.loc[idxmin, 'Gait cycle']}%"
-            mintxt = f"{df.loc[idxmin, col]:.1f}"
-            range = f"{df.loc[idxmax, col] - df.loc[idxmin, col]:.1f}"
-            return maxtxt, mintxt, range
+            mn = round(df.loc[idxmin, col], 1)
+            rm = round(mx - mn, 1)
+            return mx, mn, rm
 
         stats_left = stats(df_left, "Left Mean")
         stats_right = stats(df_right, "Right Mean")
@@ -370,6 +368,17 @@ class Plot:
             df_stats.insert(0, 'Phase', key)
             df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
         st.dataframe(df_combined, hide_index=True)
+        # Write the combined df into an Excel file in memory and link to Download button
+        output = BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        df_combined.to_excel(writer, sheet_name='Sheet1', index=False)
+        writer.close()
+        st.download_button(
+            label="Download stats.xlsx",
+            data=output.getvalue(),
+            file_name="stats.xlsx",
+            mime="application/vnd.ms-excel"
+        )
 
         # frames = st.slider(f"Select a range of gate cycle frames from 0 to 100 for {bioparameter}", 0, 100, (0, 100))
         # df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], frames=frames)
