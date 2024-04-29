@@ -422,8 +422,12 @@ class Plot:
             # for row in state["added_rows"]:
             #     df.loc[len(df)] = row
             #     df.reset_index(drop=True, inplace=True)
-
-            df['R ROM'] = df.apply(lambda row: row['% Start'] + row['% End'], axis=1)
+            phases = dict(zip(df["Phase"], zip(df["% Start"], df["% End"])))
+            df_combined = pd.DataFrame()
+            for key, value in phases.items():
+                df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], phase=key, frames=value)
+                df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
+            st.session_state["df_combined"] = df_combined
 
         st.data_editor(st.session_state["df_combined"], key="df_editor", on_change=df_on_change, column_config=column_config, hide_index=True, num_rows="fixed")
 
