@@ -338,7 +338,9 @@ class Plot:
             "You can choose multiple parameters to plot", params
         )
         for param in self.params2plot:
-            self.plot(param, d.data2plot[param])
+            dfs = d.data2plot[param]
+            self.plot(param, dfs)
+            self.showstats(dfs)
 
     def plot(self, bioparameter, dfs):
         st.header(f"{bioparameter}")
@@ -365,19 +367,26 @@ class Plot:
             fig.add_band(df_norm)
         fig.add_legend(labels)
         fig.render()
+
+    def showstats(self, dfs):
+
+        def calc_stats(phases):
+            "Create a combined dataframe for all phases: dict {'Full Cycle': (0, 100),}"
+
+            df_combined = pd.DataFrame()
+            for key, value in phases.items():
+                df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], phase=key, frames=value)
+                df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
+            return df_combined
+        
         st.markdown("###### Mean value statistics")
         st.markdown("Table below shows maximum, minimum and range of motion for left (L) and right (R) side during main gait cycle phases.")
-        # Create a combined DataFrame for all phases
-        df_combined = pd.DataFrame()
-        for key, value in c.phases.items():
-            df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], phase=key, frames=value)
-            df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
-        # st.dataframe(df_combined, hide_index=True)
-        # Prepare data_editor
-        # df_combined is to be loaded into data_editor from the session state and vice versa
-        if "df_combined" not in st.session_state:
-            st.session_state["df_combined"] = df_combined
-        # required to accept the row, disabled to edit
+
+        # df_stats to be loaded into data_editor from the session state and vice versa
+        df_stats = calc_stats(c.phases)
+        if "df_stats" not in st.session_state:
+            st.session_state["df_stats"] = df_stats
+        # data_editor columns: 'required' to accept the row, 'disabled' to edit
         column_config={
             "Phase": st.column_config.Column(
                 required=True,
@@ -412,10 +421,10 @@ class Plot:
         }
 
         def df_on_change():
-            "change df_combined to fit df_editor, called from on_change="
+            "change df_stats to fit df_editor, called from on_change="
 
             state = st.session_state["df_editor"]
-            df = st.session_state["df_combined"]
+            df = st.session_state["df_stats"]
             for index, updates in state["edited_rows"].items():
                 for key, value in updates.items():
                     df.loc[index, key] = value
@@ -423,18 +432,16 @@ class Plot:
             #     df.loc[len(df)] = row
             #     df.reset_index(drop=True, inplace=True)
             phases = dict(zip(df["Phase"], zip(df["% Start"], df["% End"])))
-            df_combined = pd.DataFrame()
-            for key, value in phases.items():
-                df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], phase=key, frames=value)
-                df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
-            st.session_state["df_combined"] = df_combined
+            df_stats = calc_stats(phases)
+            st.session_state["df_stats"] = df_stats
 
-        st.data_editor(st.session_state["df_combined"], key="df_editor", on_change=df_on_change, column_config=column_config, hide_index=True, num_rows="fixed")
+        st.data_editor(st.session_state["df_stats"], key="df_editor", on_change=df_on_change,
+                       column_config=column_config, hide_index=True, num_rows="fixed")
 
-        # Write the combined df into an Excel file in memory and link to Download button
+        # Write df in Excel format to memory and link to Download button
         output = BytesIO()
         writer = pd.ExcelWriter(output, engine='xlsxwriter')
-        st.session_state["df_combined"].to_excel(writer, sheet_name='Sheet1', index=False)
+        st.session_state["df_stats"].to_excel(writer, sheet_name='Sheet1', index=False)
         writer.close()
         st.download_button(
             label="Download stats.xlsx",
@@ -442,15 +449,6 @@ class Plot:
             file_name="stats.xlsx",
             mime="application/vnd.ms-excel"
         )
-
-        # frames = st.slider(f"Select a range of gate cycle frames from 0 to 100 for {bioparameter}", 0, 100, (0, 100))
-        # df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], frames=frames)
-        # st.dataframe(df_stats, hide_index=True)
-        # for col, (key, value) in zip(st.columns(len(c.phases)), c.phases.items()):
-        #     with col:
-        #         st.markdown(f"{key}")
-        #         df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], frames=value)
-        #         st.dataframe(df_stats, hide_index=True)
 
 
 class PlotLayout:
