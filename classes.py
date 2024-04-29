@@ -372,11 +372,65 @@ class Plot:
         for key, value in c.phases.items():
             df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], phase=key, frames=value)
             df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
-        st.dataframe(df_combined, hide_index=True)
+        # st.dataframe(df_combined, hide_index=True)
+        # Prepare data_editor
+        # df_combined is to be loaded into data_editor from the session state and vice versa
+        if "df_combined" not in st.session_state:
+            st.session_state["df_combined"] = df_combined
+        # required to accept the row, disabled to edit
+        column_config={
+            "Phase": st.column_config.Column(
+                required=True,
+            ),
+            "% Start": st.column_config.NumberColumn(
+                required=True, min_value=0, max_value=100,
+            ),
+            "% End": st.column_config.NumberColumn(
+                required=True, min_value=0, max_value=100,
+            ),
+            "L Max": st.column_config.Column(
+                disabled=True,
+            ),
+            "L Min": st.column_config.Column(
+                disabled=True,
+            ),
+            "L ROM": st.column_config.Column(
+                disabled=True,
+            ),
+            "R Max": st.column_config.Column(
+                disabled=True,
+            ),
+            "R Min": st.column_config.Column(
+                disabled=True,
+            ),
+            "R ROM": st.column_config.Column(
+                disabled=True,
+            ),
+            "Δ ROM": st.column_config.Column(
+                disabled=True,
+            ),
+        }
+
+        def df_on_change():
+            "change df_combined to fit df_editor, called from on_change="
+
+            state = st.session_state["df_editor"]
+            df = st.session_state["df_combined"]
+            for index, updates in state["edited_rows"].items():
+                for key, value in updates.items():
+                    df.loc[index, key] = value
+            # for row in state["added_rows"]:
+            #     df.loc[len(df)] = row
+            #     df.reset_index(drop=True, inplace=True)
+
+            df['R ROM'] = df.apply(lambda row: row['% Start'] + row['% End'], axis=1)
+
+        st.data_editor(st.session_state["df_combined"], key="df_editor", on_change=df_on_change, column_config=column_config, hide_index=True, num_rows="fixed")
+
         # Write the combined df into an Excel file in memory and link to Download button
         output = BytesIO()
         writer = pd.ExcelWriter(output, engine='xlsxwriter')
-        df_combined.to_excel(writer, sheet_name='Sheet1', index=False)
+        st.session_state["df_combined"].to_excel(writer, sheet_name='Sheet1', index=False)
         writer.close()
         st.download_button(
             label="Download stats.xlsx",
