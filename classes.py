@@ -158,7 +158,7 @@ class DataSet:
         return df
 
     @classmethod
-    def create_df_stats(cls, df_left, df_right, frames=(0, 100)):
+    def create_df_stats(cls, df_left, df_right, phase="Full Cycle", frames=(0, 100)):
         df_left = df_left.loc[
             (df_left["Gait cycle"] >= frames[0]) & (df_left["Gait cycle"] <= frames[1])
         ]
@@ -176,13 +176,19 @@ class DataSet:
 
         stats_left = stats(df_left, "Left Mean")
         stats_right = stats(df_right, "Right Mean")
+        # need [] otherwise index required
         df_stats = pd.DataFrame(
             {
-                "G.c.,%": [frames[0], frames[1]],
-                "Side": ["Left", "Right"],
-                "Max": [stats_left[0], stats_right[0]],
-                "Min": [stats_left[1], stats_right[1]],
-                "ROM": [stats_left[2], stats_right[2]],
+                "Phase": [phase],
+                "% Start": [frames[0]], 
+                "% End": [frames[1]],
+                "L Max": [stats_left[0]], 
+                "L Min": [stats_left[1]],
+                "L ROM": [stats_left[2]],
+                "R Max": [stats_right[0]], 
+                "R Min": [stats_right[1]],
+                "R ROM": [stats_right[2]],
+                "Δ ROM": [stats_left[2] - stats_right[2]],
             }
         )
         return df_stats
@@ -360,12 +366,11 @@ class Plot:
         fig.add_legend(labels)
         fig.render()
         st.markdown("###### Mean value statistics")
-        st.markdown("Table below shows maximum, minimum and range of motion during main gait cycle phases.")
+        st.markdown("Table below shows maximum, minimum and range of motion for left (L) and right (R) side during main gait cycle phases.")
         # Create a combined DataFrame for all phases
         df_combined = pd.DataFrame()
         for key, value in c.phases.items():
-            df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], frames=value)
-            df_stats.insert(0, 'Phase', key)
+            df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], phase=key, frames=value)
             df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
         st.dataframe(df_combined, hide_index=True)
         # Write the combined df into an Excel file in memory and link to Download button
