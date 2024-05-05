@@ -162,6 +162,7 @@ class DataSet:
     def create_df_stats(cls, df_left, df_right, phase="Full Cycle", frames=(0, 100)):
         # start after end
         if frames[0] > frames[1]:
+            # need [] for df otherwise index required
             return pd.DataFrame(
                 {
                     "Phase": [phase],
@@ -193,12 +194,11 @@ class DataSet:
                 rm = round(mx - mn, 1)
                 return mx, mn, rm
             except ValueError:
-                return [np.nan, np.nan, np.nan]
+                return np.nan, np.nan, np.nan
 
         stats_left = stats(df_left, "Left Mean")
         stats_right = stats(df_right, "Right Mean")
-        # need [] otherwise index required
-        df_stats = pd.DataFrame(
+        return pd.DataFrame(
             {
                 "Phase": [phase],
                 "% Start": [frames[0]], 
@@ -212,7 +212,6 @@ class DataSet:
                 "Δ ROM": [stats_left[2] - stats_right[2]],
             }
         )
-        return df_stats
 
 
 
