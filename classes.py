@@ -4,6 +4,7 @@ from bokeh.layouts import gridplot
 from bokeh.models import ColumnDataSource, Legend, Range1d, Label, Band
 
 import os
+import numpy as np
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
@@ -159,6 +160,23 @@ class DataSet:
 
     @classmethod
     def create_df_stats(cls, df_left, df_right, phase="Full Cycle", frames=(0, 100)):
+        # start after end
+        if frames[0] > frames[1]:
+            return pd.DataFrame(
+                {
+                    "Phase": [phase],
+                    "% Start": [frames[0]], 
+                    "% End": [frames[1]],
+                    "L Max": [np.nan], 
+                    "L Min": [np.nan],
+                    "L ROM": [np.nan],
+                    "R Max": [np.nan], 
+                    "R Min": [np.nan],
+                    "R ROM": [np.nan],
+                    "Δ ROM": [np.nan],
+                }
+            )
+
         df_left = df_left.loc[
             (df_left["Gait cycle"] >= frames[0]) & (df_left["Gait cycle"] <= frames[1])
         ]
@@ -167,12 +185,15 @@ class DataSet:
         ]
 
         def stats(df, col):
-            idxmax = df[col].idxmax()
-            mx = round(df.loc[idxmax, col], 1)
-            idxmin = df[col].idxmin()
-            mn = round(df.loc[idxmin, col], 1)
-            rm = round(mx - mn, 1)
-            return mx, mn, rm
+            try:
+                idxmax = df[col].idxmax()
+                mx = round(df.loc[idxmax, col], 1)
+                idxmin = df[col].idxmin()
+                mn = round(df.loc[idxmin, col], 1)
+                rm = round(mx - mn, 1)
+                return mx, mn, rm
+            except ValueError:
+                return [np.nan, np.nan, np.nan]
 
         stats_left = stats(df_left, "Left Mean")
         stats_right = stats(df_right, "Right Mean")
@@ -192,6 +213,7 @@ class DataSet:
             }
         )
         return df_stats
+
 
 
 class DataCompare:
@@ -381,13 +403,20 @@ class Plot:
         
         st.markdown("###### Mean value statistics")
         st.markdown("Table below shows maximum, minimum and range of motion for left (L) and right (R) side during main gait cycle phases.")
+        st.markdown("You can edit the first three columns to customize gait cycle phases.")
 
         # df_stats to be loaded into data_editor from the session state and vice versa
-        df_stats = calc_stats(c.phases)
-        if "df_stats" not in st.session_state:
-            st.session_state["df_stats"] = df_stats
+        if "df_stats" not in st.session_state or st.session_state["reset_stats"]:
+            st.session_state["df_stats"] = calc_stats(c.phases)
+            st.session_state["reset_stats"] = False
+
+        def force_reset():
+            st.session_state["reset_stats"] = True
+
+        st.button("Reset stats", on_click=force_reset)
+
         # data_editor columns: 'required' to accept the row, 'disabled' to edit
-        column_config={
+        column_config = {
             "Phase": st.column_config.Column(
                 required=True,
             ),
