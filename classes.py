@@ -2,6 +2,7 @@ from bokeh.embed import file_html
 from bokeh.plotting import figure
 from bokeh.layouts import gridplot
 from bokeh.models import ColumnDataSource, Legend, Range1d, Label, Band
+from bokeh.models.tickers import SingleIntervalTicker
 
 import os
 import numpy as np
@@ -307,6 +308,7 @@ class Figure:
         self.figure.yaxis.axis_label_text_font_style = "normal"
         self.figure.xaxis.axis_label_text_font_size = "14px"
         self.figure.yaxis.axis_label_text_font_size = "14px"
+        self.figure.xaxis.ticker = SingleIntervalTicker(interval=10)
         self.figure.toolbar.logo = None
 
     def add_line(self, df, column, color, width, line_dash="solid"):
