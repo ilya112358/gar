@@ -354,13 +354,14 @@ class Plot:
     """Plot the data from the DataSet object"""
 
     def __init__(self, d):
-        params = list(d.data2plot.keys())
-        self.params2plot = st.multiselect(
-            "You can choose multiple parameters to plot", params
+        param2plot = st.selectbox(
+            "You can choose one parameter to plot", 
+            tuple(d.data2plot.keys()),
+            index=None,
         )
-        for param in self.params2plot:
-            dfs = d.data2plot[param]
-            self.plot(param, dfs)
+        if param2plot is not None:
+            dfs = d.data2plot[param2plot]
+            self.plot(param2plot, dfs)
             self.showstats(dfs)
 
     def plot(self, bioparameter, dfs):
