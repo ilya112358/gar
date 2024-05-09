@@ -175,6 +175,8 @@ class DataSet:
                     "R Max": [np.nan], 
                     "R Min": [np.nan],
                     "R ROM": [np.nan],
+                    "Δ Max": [np.nan],
+                    "Δ Min": [np.nan],
                     "Δ ROM": [np.nan],
                 }
             )
@@ -210,6 +212,8 @@ class DataSet:
                 "R Max": [stats_right[0]], 
                 "R Min": [stats_right[1]],
                 "R ROM": [stats_right[2]],
+                "Δ Max": [stats_left[0] - stats_right[0]],
+                "Δ Min": [stats_left[1] - stats_right[1]],
                 "Δ ROM": [stats_left[2] - stats_right[2]],
             }
         )
@@ -417,36 +421,12 @@ class Plot:
 
         # data_editor columns: 'required' to accept the row, 'disabled' to edit
         column_config = {
-            "Phase": st.column_config.Column(
-                required=True,
-            ),
-            "% Start": st.column_config.NumberColumn(
-                required=True, min_value=0, max_value=100,
-            ),
-            "% End": st.column_config.NumberColumn(
-                required=True, min_value=0, max_value=100,
-            ),
-            "L Max": st.column_config.Column(
-                disabled=True,
-            ),
-            "L Min": st.column_config.Column(
-                disabled=True,
-            ),
-            "L ROM": st.column_config.Column(
-                disabled=True,
-            ),
-            "R Max": st.column_config.Column(
-                disabled=True,
-            ),
-            "R Min": st.column_config.Column(
-                disabled=True,
-            ),
-            "R ROM": st.column_config.Column(
-                disabled=True,
-            ),
-            "Δ ROM": st.column_config.Column(
-                disabled=True,
-            ),
+            "Phase": st.column_config.Column(required=True),
+            "% Start": st.column_config.NumberColumn(required=True, min_value=0, max_value=100),
+            "% End": st.column_config.NumberColumn(required=True, min_value=0, max_value=100),
+            "L Max": st.column_config.Column(disabled=True), "L Min": st.column_config.Column(disabled=True), "L ROM": st.column_config.Column(disabled=True),
+            "R Max": st.column_config.Column(disabled=True), "R Min": st.column_config.Column(disabled=True), "R ROM": st.column_config.Column(disabled=True),
+            "Δ Max": st.column_config.Column(disabled=True), "Δ Min": st.column_config.Column(disabled=True), "Δ ROM": st.column_config.Column(disabled=True),
         }
 
         def df_on_change():
@@ -454,18 +434,23 @@ class Plot:
 
             state = st.session_state["df_editor"]
             df = st.session_state["df_stats"]
+            # Edited
             for index, updates in state["edited_rows"].items():
                 for key, value in updates.items():
                     df.loc[index, key] = value
-            # for row in state["added_rows"]:
-            #     df.loc[len(df)] = row
-            #     df.reset_index(drop=True, inplace=True)
+            # Added
+            for row in state["added_rows"]:
+                df.loc[len(df)] = row
+                df.reset_index(drop=True, inplace=True)
+            # Deleted
+            for index in state["deleted_rows"]:
+                df.drop(index, inplace=True)
             phases = dict(zip(df["Phase"], zip(df["% Start"], df["% End"])))
             df_stats = calc_stats(phases)
             st.session_state["df_stats"] = df_stats
 
         st.data_editor(st.session_state["df_stats"], key="df_editor", on_change=df_on_change,
-                       column_config=column_config, hide_index=True, num_rows="fixed")
+                       column_config=column_config, hide_index=True, num_rows="dynamic")
 
         # Write df in Excel format to memory and link to Download button
         output = BytesIO()
