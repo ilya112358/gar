@@ -367,11 +367,9 @@ class Plot:
             self.showstats(dfs)
 
     def plot(self, bioparameter, dfs):
-        st.header(f"{bioparameter}")
+        st.markdown(f"### {bioparameter}")
         opts = ["Left", "Right", "Both"]
-        foot2plot = st.radio(
-            f"Show plot for {bioparameter}", opts, horizontal=True, index=2
-        )
+        foot2plot = st.radio(f"Show plot for {bioparameter}", opts, horizontal=True, index=2)
         fig = Figure(y_axis=dfs["y_axis"])
         labels = []
         df = dfs[{"Left": "df_left", "Right": "df_right", "Both": "df_both"}[foot2plot]]
@@ -486,6 +484,10 @@ class PlotLayout:
     """Plot graphs in standard layout"""
 
     def __init__(self, d):
+        st.markdown("All graphs show mean values, :red[red for Left] and :blue[blue for Right]")
+        st.markdown(":gray[Gray bands] show normative values +/- 1 SD")
+        st.markdown("Check [individual plots](#individual-plots) to see consistency and relevant statistics")
+
         height = c.size["small_height"]
         width = c.size["small_width"]
         figs = {}
