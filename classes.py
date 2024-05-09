@@ -368,7 +368,7 @@ class Plot:
         if param2plot is not None:
             dfs = d.data2plot[param2plot]
             self.plot(param2plot, dfs)
-            self.showstats(dfs)
+            self.showstats(param2plot, dfs)
 
     def plot(self, bioparameter, dfs):
         st.markdown(f"### {bioparameter}")
@@ -394,7 +394,7 @@ class Plot:
         fig.add_legend(labels)
         fig.render()
 
-    def showstats(self, dfs):
+    def showstats(self, param2plot, dfs):
 
         def calc_stats(phases):
             "Create a combined dataframe for all phases: dict {'Full Cycle': (0, 100),}"
@@ -410,9 +410,10 @@ class Plot:
         st.markdown("You can edit the first three columns to customize gait cycle phases.")
 
         # df_stats to be loaded into data_editor from the session state and vice versa
-        if "df_stats" not in st.session_state or st.session_state["reset_stats"]:
+        if "df_stats" not in st.session_state or st.session_state["reset_stats"] or param2plot != st.session_state["param2plot"]:
             st.session_state["df_stats"] = calc_stats(c.phases)
             st.session_state["reset_stats"] = False
+            st.session_state["param2plot"] = param2plot
 
         def force_reset():
             st.session_state["reset_stats"] = True
