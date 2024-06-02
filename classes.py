@@ -251,17 +251,17 @@ class DataCompare:
                 d_df_both["Right Mean 2"] = d2_df_both["Right Mean"]
                 # connect d1_df_stats and d2_df_stats
                 # rename columns to avoid duplicates
-                d_df_stats.rename(
-                    columns={
-                        "Maximum": "Maximum 1",
-                        "Minimum": "Minimum 1",
-                        "Range": "Range 1",
-                    },
-                    inplace=True,
-                )
-                d_df_stats["Maximum 2"] = d2_df_stats["Maximum"]
-                d_df_stats["Minimum 2"] = d2_df_stats["Minimum"]
-                d_df_stats["Range 2"] = d2_df_stats["Range"]
+                # d_df_stats.rename(
+                #     columns={
+                #         "Maximum": "Maximum 1",
+                #         "Minimum": "Minimum 1",
+                #         "Range": "Range 1",
+                #     },
+                #     inplace=True,
+                # )
+                # d_df_stats["Maximum 2"] = d2_df_stats["Maximum"]
+                # d_df_stats["Minimum 2"] = d2_df_stats["Minimum"]
+                # d_df_stats["Range 2"] = d2_df_stats["Range"]
                 self.data2plot[item] = {"df_both": d_df_both, "df_stats": d_df_stats}
 
 
@@ -533,7 +533,7 @@ class PlotCompare:
 
     def plot_compare(self, df_both, df_stats, param):
         st.header(f"{param}")
-        st.dataframe(df_stats, hide_index=True)
+        # st.dataframe(df_stats, hide_index=True)
         fig = Figure()
         labels = []
         for col in range(1, len(df_both.columns)):
