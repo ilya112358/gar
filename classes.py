@@ -88,8 +88,13 @@ class DataSet:
         df = df.iloc[:, 1:]
         keys = df.loc[0].tolist()
         values = df.loc[4].tolist()
-        return dict(zip(keys, values))
-
+        dct = dict(zip(keys, values))
+        # check if there is the key "Folder Name", take the name of the last folder from the value and split into subsession and test condition
+        if "Folder Name" in dct:
+            dct["Subsession"], dct["Test condition"] = (dct["Folder Name"].split("\\")[-2]).split("_")
+            del dct["Folder Name"]
+        return dct
+    
     def process_dfs(self, file_pair):
         df_left = self.process_data_file(file_pair["left"])
         df_right = self.process_data_file(file_pair["right"])
