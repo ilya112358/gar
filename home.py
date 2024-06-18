@@ -1,7 +1,7 @@
 import streamlit as st
 from classes import c
 
-
+st.session_state["current_page"] = 0
 st.set_page_config(
     page_title="Gait Analysis Report", layout="wide"
 )  # not a central column
