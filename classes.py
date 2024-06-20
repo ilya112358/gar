@@ -413,17 +413,20 @@ class Plot:
         st.markdown("###### Mean value statistics")
         st.markdown("Table below shows maximum, minimum and range of motion for left (L) and right (R) side during main gait cycle phases.")
         st.markdown("You can edit the first three columns to customize gait cycle phases.")
+        st.markdown("It is also possible to copy and paste gait cycle phases from an Excel file.")
 
-        # df_stats to be loaded into data_editor from the session state and vice versa
+        # first run or reset or param2plot changed
         if "df_stats" not in st.session_state or st.session_state["reset_stats"] or param2plot != st.session_state["param2plot"]:
             st.session_state["df_stats"] = calc_stats(c.phases)
             st.session_state["reset_stats"] = False
             st.session_state["param2plot"] = param2plot
+            if "analysis" in st.session_state:
+                st.session_state["analysis"] = ""
 
         def force_reset():
             st.session_state["reset_stats"] = True
 
-        st.button("Reset stats", on_click=force_reset)
+        st.button("Reset stats and analysis", on_click=force_reset)
 
         # data_editor columns: 'required' to accept the row, 'disabled' to edit
         column_config = {
@@ -458,10 +461,25 @@ class Plot:
         st.data_editor(st.session_state["df_stats"], key="df_editor", on_change=df_on_change,
                        column_config=column_config, hide_index=True, num_rows="dynamic")
 
+        st.text_area("You may write a short analysis here", key="analysis")
+        
         # Write df in Excel format to memory and link to Download button
         output = BytesIO()
         writer = pd.ExcelWriter(output, engine='xlsxwriter')
-        st.session_state["df_stats"].to_excel(writer, sheet_name='Sheet1', index=False)
+
+        st.session_state["df_stats"].to_excel(writer, sheet_name='Sheet1', index=False, startrow=2)
+        # initialize workbook and worksheet
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+        # add title
+        bold = workbook.add_format({'bold': True})
+        worksheet.write_string(0, 0, param2plot, bold)
+        # set the width of the first column in a worksheet to the width of the first column in the dataframe
+        longest_string_length = st.session_state["df_stats"]['Phase'].str.len().max()
+        worksheet.set_column(0, 0, longest_string_length)
+        # add row to the table containing text from text_area widget
+        worksheet.write_string(len(st.session_state["df_stats"]) + 4, 0, st.session_state["analysis"])
+        
         writer.close()
         st.download_button(
             label="Download stats.xlsx",
