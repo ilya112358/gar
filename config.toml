@@ -148,9 +148,9 @@ color_list = [
 
 [size]
 height = 600
-width = 1200
-small_height = 300
-small_width = 450
+width = 1100
+small_height = 275
+small_width = 400
 
 [phases]
 # names = [
