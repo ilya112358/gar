@@ -10,6 +10,8 @@ if "d2" in st.session_state:
         st.session_state["reset_stats"] = True
     st.markdown("## Metadata")
     st.dataframe(st.session_state["d2"].info)
+    st.markdown("## Temporal and Spatial data")
+    st.dataframe(st.session_state["d2"].ts)
     st.markdown("## Summary Grid")
     PlotLayout(st.session_state["d2"])
     st.markdown("[Go to the Top](#measurement-two)")

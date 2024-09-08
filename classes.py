@@ -58,7 +58,8 @@ class DataSet:
     def __init__(self, directory):
         file_pairs = []  # list of dictionaries
         self.data2plot = {}  # dictionary to store processed data for plotting
-        self.info = self.process_info(os.path.join(directory, "Info.txt"))
+        self.info = self.process_info(os.path.join(directory, "Info.txt"))  # Metadata
+        self.ts = self.process_ts(os.path.join(directory, "Temporal Distance.txt"))  # Temporal & Spatial
         for item in c.kinematics:
             left_file = os.path.join(directory, item["left_file"])
             right_file = os.path.join(directory, item["right_file"])
@@ -98,6 +99,35 @@ class DataSet:
             dct["Subsession"], dct["Test condition"] = (dct["Folder Name"].split("\\")[-2]).split("_")
             del dct["Folder Name"]
         return dct
+
+    def process_ts(self, file):
+        try:
+            df = pd.read_csv(file, sep="\t")
+        except FileNotFoundError:
+            dct = {"Error": "File Temporal Distance.txt not found"}
+            return dct
+        # Now 'df' is a pandas DataFrame containing data from the file
+        # Remove first col (index), use first row as keys, fifth as values
+        df = df.iloc[:, 1:]
+        keys = df.loc[0].tolist()
+        values = [float(v) for v in df.loc[4].tolist()]
+        dct = dict(zip(keys, values))
+        # values from QRC
+        ts = {
+            "Speed, m/s": f"{dct["Speed"]:.2f}",
+            "Cadence, steps/min": f"{(dct["Left_Steps_Per_Minute_Mean"])+(dct["Right_Steps_Per_Minute_Mean"])/2:.0f}",
+            "Cycle Time, s": f"{dct["Cycle_Time_Mean"]:.2f}",
+            "Stride Length, cm": f"{dct["Stride_Length_Mean"]*100:.0f}",
+            "Stride Width, cm": f"{dct["Stride_Width_Mean"]*100:.1f}",
+            "Left Step Length, cm": f"{dct["Left_Step_Length_Mean"]*100:.0f}",
+            "Right Step Length, cm": f"{dct["Right_Step_Length_Mean"]*100:.0f}",
+            "Left Step Time, s": f"{dct["Left_Step_Time_Mean"]:.2f}",
+            "Right Step Time, s": f"{dct["Right_Step_Time_Mean"]:.2f}",
+            "Left Stance Time, %": f"{dct["Left_Stance_Time_Mean"]/dct["Left_Cycle_Time_Mean"]*100:.1f}",
+            "Right Stance Time, %": f"{dct["Right_Stance_Time_Mean"]/dct["Right_Cycle_Time_Mean"]*100:.1f}",
+            "Initial Double Limb Support, %": f"{dct["Double_Limb_Support_Time_Ave"]/2/dct["Cycle_Time_Mean"]*100:.1f}",
+        }
+        return ts
     
     def process_dfs(self, file_pair):
         df_left = self.process_data_file(file_pair["left"])
