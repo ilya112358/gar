@@ -82,7 +82,11 @@ class DataSet:
         # print(f"{len(self.data2plot)} pairs loaded")
 
     def process_info(self, file):
-        df = pd.read_csv(file, sep="\t")
+        try:
+            df = pd.read_csv(file, sep="\t")
+        except FileNotFoundError:
+            dct = {"Error": "File Info.txt not found"}
+            return dct
         # Now 'df' is a pandas DataFrame containing data from the file
         # Remove first col (index), use first row as keys, fifth as values
         df = df.iloc[:, 1:]
