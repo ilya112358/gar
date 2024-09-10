@@ -86,8 +86,8 @@ class DataSet:
         try:
             df = pd.read_csv(file, sep="\t")
         except FileNotFoundError:
-            dct = {"Error": "File Info.txt not found"}
-            return dct
+            st.error("File Info.txt not found")
+            st.stop()
         # Now 'df' is a pandas DataFrame containing data from the file
         # Remove first col (index), use first row as keys, fifth as values
         df = df.iloc[:, 1:]
