@@ -58,37 +58,44 @@ class DataSet:
     def __init__(self, directory):
         file_pairs = []  # list of dictionaries
         self.data2plot = {}  # dictionary to store processed data for plotting
-        self.info = self.process_info(os.path.join(directory, "Info.txt"))  # Metadata
-        self.ts = self.process_ts(os.path.join(directory, "Temporal Distance.txt"))  # Temporal & Spatial
-        for item in c.kinematics:
-            left_file = os.path.join(directory, item["left_file"])
-            right_file = os.path.join(directory, item["right_file"])
-            if os.path.isfile(left_file) and os.path.isfile(right_file):
-                norm_file = None
-                if "norm_file" in item:
-                    norm_file_path = os.path.join(directory, item["norm_file"])
-                    if os.path.isfile(norm_file_path):
-                        norm_file = norm_file_path
-                file_pairs.append(
-                    {
-                        "name": item["name"],
-                        "left": left_file,
-                        "right": right_file,
-                        "norm": norm_file,
-                        "y_axis": item["y_axis"] if "y_axis" in item else None,
-                    }
-                )
-        for file_pair in file_pairs:
-            self.data2plot[file_pair["name"]] = self.process_dfs(file_pair)
-        # print(f"{len(self.data2plot)} pairs loaded")
-
-    def process_info(self, file):
         try:
-            df = pd.read_csv(file, sep="\t")
+            df = pd.read_csv(os.path.join(directory, "Info.txt"), sep="\t")
         except FileNotFoundError:
             st.error("File Info.txt not found")
             st.stop()
-        # Now 'df' is a pandas DataFrame containing data from the file
+        self.info = self.process_info(df)  # Metadata
+        try:
+            df = pd.read_csv(os.path.join(directory, "Temporal Distance.txt"), sep="\t")
+            dct = self.process_ts(df)  # Temporal & Spatial
+        except FileNotFoundError:
+            dct = {"Error": "File Temporal Distance.txt not found"}
+        self.ts = dct
+        for item in c.kinematics:
+            left_file = os.path.join(directory, item["left_file"])
+            right_file = os.path.join(directory, item["right_file"])
+            try:
+                left_file = pd.read_csv(left_file, sep="\t")
+                right_file = pd.read_csv(right_file, sep="\t")
+            except FileNotFoundError:
+                continue
+            if "norm_file" in item:
+                try:
+                    norm_file = pd.read_csv(os.path.join(directory, item["norm_file"]), sep="\t")
+                except FileNotFoundError:
+                    norm_file = None
+            file_pairs.append(
+                {
+                    "name": item["name"],
+                    "left": left_file,
+                    "right": right_file,
+                    "norm": norm_file,
+                    "y_axis": item["y_axis"] if "y_axis" in item else None,
+                }
+            )
+        for file_pair in file_pairs:
+            self.data2plot[file_pair["name"]] = self.process_dfs(file_pair)
+
+    def process_info(self, df):
         # Remove first col (index), use first row as keys, fifth as values
         df = df.iloc[:, 1:]
         keys = df.loc[0].tolist()
@@ -100,13 +107,7 @@ class DataSet:
             del dct["Folder Name"]
         return dct
 
-    def process_ts(self, file):
-        try:
-            df = pd.read_csv(file, sep="\t")
-        except FileNotFoundError:
-            dct = {"Error": "File Temporal Distance.txt not found"}
-            return dct
-        # Now 'df' is a pandas DataFrame containing data from the file
+    def process_ts(self, df):
         # Remove first col (index), use first row as keys, fifth as values
         df = df.iloc[:, 1:]
         keys = df.loc[0].tolist()
@@ -166,9 +167,7 @@ class DataSet:
             "y_axis": y_axis,
         }
 
-    def process_data_file(self, file):
-        df = pd.read_csv(file, sep="\t")
-        # Now 'df' is a pandas DataFrame containing data from the file
+    def process_data_file(self, df):
         # Remove first 4 text rows (headers)
         df = df.drop(df.index[:4])
         for col in df.columns:
@@ -187,8 +186,8 @@ class DataSet:
         df["Mean"] = df1.mean(numeric_only=True, axis=1)
         return df
 
-    def process_norm(self, file):
-        df = pd.read_csv(file, sep="\t")
+    def process_norm(self, df):
+        # Remove first 4 text rows (headers)
         df = df.drop(df.index[:4])
         for col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
