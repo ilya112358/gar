@@ -1,8 +1,21 @@
+import pandas as pd
 import streamlit as st
+import zipfile
 from classes import DataSet, Plot, PlotLayout
 
-if st.button("Press to use example data"):
-    st.session_state["d1"] = DataSet("Archive/Data.1")
+uploaded_file = None
+col1, col2 = st.columns(2, vertical_alignment="center")
+with col1:
+    uploaded_file = st.file_uploader("Upload a zip file", type=["zip"], key="upload")
+with col2:
+    if uploaded_file is None:
+        if st.button("Or use example data"):
+            uploaded_file = "Archive/Data1.zip"
+if uploaded_file is not None:
+    with zipfile.ZipFile(uploaded_file) as zf:
+        # make a dict where zf.namelist() will be the keys and the values will be dfs read from the files
+        d = {x: pd.read_csv(zf.open(x), sep="\t") for x in zf.namelist()}
+        st.session_state["d1"] = DataSet(d)
 
 if "d1" in st.session_state:
     st.title(

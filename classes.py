@@ -40,61 +40,36 @@ class DataSet:
     data2plot : dict
         A dictionary to store processed data for plotting.
         Each key is a parameter name, and each value is a dictionary containing the processed dataframes
-        for left, right, both, stats, and optionally norm.
-
-    Methods
-    -------
-    process_dfs(self, file_pair):
-        Process data for the file pair. Returns a dictionary containing five dataframes
-        (or four plus None if norm is not present).
-    process_data_file(self, file):
-        Load file, pre-process data, return a dataframe.
-    process_norm(self, file):
-        Load norm file, pre-process data, return a dataframe.
-    create_df_stats(self, df_left, df_right):
-        Create a dataframe with statistics for the left and right dataframes.
+        for left, right, both, optionally norm, stats and y-axis limits.
+    info : dict
+        A dictionary containing metadata extracted from the "Info.txt" file.
+    ts : dict
+        A dictionary containing temporal and spatial data from the "Temporal Distance.txt" file.
     """
 
-    def __init__(self, directory):
-        file_pairs = []  # list of dictionaries
+    def __init__(self, d):
         self.data2plot = {}  # dictionary to store processed data for plotting
-        try:
-            df = pd.read_csv(os.path.join(directory, "Info.txt"), sep="\t")
-        except FileNotFoundError:
+        if "Info.txt" not in d:
             st.error("File Info.txt not found")
             st.stop()
-        self.info = self.process_info(df)  # Metadata
-        try:
-            df = pd.read_csv(os.path.join(directory, "Temporal Distance.txt"), sep="\t")
-            dct = self.process_ts(df)  # Temporal & Spatial
-        except FileNotFoundError:
+        self.info = self.process_info(d["Info.txt"])  # Metadata
+        if "Temporal Distance.txt" not in d:
             dct = {"Error": "File Temporal Distance.txt not found"}
-        self.ts = dct
+        else:
+            dct = self.process_ts(d["Temporal Distance.txt"])
+        self.ts = dct    
         for item in c.kinematics:
-            left_file = os.path.join(directory, item["left_file"])
-            right_file = os.path.join(directory, item["right_file"])
-            try:
-                left_file = pd.read_csv(left_file, sep="\t")
-                right_file = pd.read_csv(right_file, sep="\t")
-            except FileNotFoundError:
+            if item["left_file"] not in d or item["right_file"] not in d:
                 continue
-            if "norm_file" in item:
-                try:
-                    norm_file = pd.read_csv(os.path.join(directory, item["norm_file"]), sep="\t")
-                except FileNotFoundError:
-                    norm_file = None
-            file_pairs.append(
+            self.data2plot[item["name"]] = self.process_dfs(
                 {
-                    "name": item["name"],
-                    "left": left_file,
-                    "right": right_file,
-                    "norm": norm_file,
+                    "left": d[item["left_file"]],
+                    "right": d[item["right_file"]],
+                    "norm": d[item["norm_file"]] if item["norm_file"] in d else None,
                     "y_axis": item["y_axis"] if "y_axis" in item else None,
                 }
             )
-        for file_pair in file_pairs:
-            self.data2plot[file_pair["name"]] = self.process_dfs(file_pair)
-
+    
     def process_info(self, df):
         # Remove first col (index), use first row as keys, fifth as values
         df = df.iloc[:, 1:]
