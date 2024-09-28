@@ -26,22 +26,23 @@ if "d1" in st.session_state:
     )
     st.title(f"{title}")
 else:
-    st.title("Measurement One")
+    st.title("Load Measurement")
+    st.write("Please upload a zip file with measurement data or use example data. Choose above.")
 
 if "d1" in st.session_state:
     if st.session_state["current_page"] != 1:
         st.session_state["current_page"] = 1
         st.session_state["reset_stats"] = True
-    st.header("Metadata", divider=True)
+    st.header("Subject", divider=True)
     st.dataframe(st.session_state["d1"].info)
     st.header("Temporal and Spatial", divider=True)
     st.dataframe(st.session_state["d1"].ts)
     st.header("Summary Grid", divider=True)
     PlotLayout(st.session_state["d1"])
-    st.write("[Go to the Top](#measurement-one)")
+    st.write("[Go to the Top](#load-measurement)")
     st.header("Individual Plots", divider=True)
     Plot(st.session_state["d1"])
-    st.write("[Go to the Top](#measurement-one)")
+    st.write("[Go to the Top](#load-measurement)")
     
     # Write df in Excel format to memory and link to Download button
     output = BytesIO()
@@ -51,18 +52,22 @@ if "d1" in st.session_state:
     # add title
     bold = workbook.add_format({'bold': True})  # formatter
     worksheet.write_string(0, 0, title, bold)
+    # subject info
     info = pd.DataFrame.from_dict(st.session_state["d1"].info, orient="index")
-    info.rename(columns={info.columns[0]: 'Metadata'}, inplace=True)
+    info.rename(columns={info.columns[0]: 'Subject'}, inplace=True)
     info.to_excel(writer, sheet_name='Sheet1', startrow=2)
+    # temporal and spatial
     ts = pd.DataFrame.from_dict(st.session_state["d1"].ts, orient="index")
     ts.rename(columns={ts.columns[0]: 'Temporal and Spatial'}, inplace=True)
     ts.to_excel(writer, sheet_name='Sheet1', startrow=2+info.shape[0]+2)
+    # format column width
     longest_string_length = max(max(len(str(i)) for i in ts.index), max(len(str(i)) for i in info.index))
     worksheet.set_column(0, 0, longest_string_length)
+    # save
     writer.close()
     st.download_button(
-        label="Download stats.xlsx",
+        label="Download report.xlsx",
         data=output.getvalue(),
-        file_name="stats.xlsx",
+        file_name="report.xlsx",
         mime="application/vnd.ms-excel"
     )
