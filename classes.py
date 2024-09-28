@@ -378,6 +378,8 @@ class Plot:
             tuple(d.data2plot.keys()),
             index=None,
         )
+        if "add_to_rep" not in st.session_state:
+            st.session_state["add_to_rep"] = {}
         if param2plot is not None:
             dfs = d.data2plot[param2plot]
             self.plot(param2plot, dfs)
@@ -470,31 +472,14 @@ class Plot:
                        column_config=column_config, hide_index=True, num_rows="dynamic")
 
         st.text_area("You may write a short analysis here", key="analysis")
-        
-        # Write df in Excel format to memory and link to Download button
-        output = BytesIO()
-        writer = pd.ExcelWriter(output, engine='xlsxwriter')
 
-        st.session_state["df_stats"].to_excel(writer, sheet_name='Sheet1', index=False, startrow=2)
-        # initialize workbook and worksheet
-        workbook = writer.book
-        worksheet = writer.sheets['Sheet1']
-        # add title
-        bold = workbook.add_format({'bold': True})
-        worksheet.write_string(0, 0, param2plot, bold)
-        # set the width of the first column in a worksheet to the width of the first column in the dataframe
-        longest_string_length = st.session_state["df_stats"]['Phase'].str.len().max()
-        worksheet.set_column(0, 0, longest_string_length)
-        # add row to the table containing text from text_area widget
-        worksheet.write_string(len(st.session_state["df_stats"]) + 4, 0, st.session_state["analysis"])
-        
-        writer.close()
-        st.download_button(
-            label="Download stats.xlsx",
-            data=output.getvalue(),
-            file_name="stats.xlsx",
-            mime="application/vnd.ms-excel"
-        )
+        # checkbox to include in Excel report
+        checked = param2plot in st.session_state["add_to_rep"]
+        if st.checkbox(f"Include {param2plot} in Excel report", value=checked):
+            st.session_state["add_to_rep"][param2plot] = {"df_stats": st.session_state["df_stats"], "analysis": st.session_state["analysis"]} 
+        else:
+            if param2plot in st.session_state["add_to_rep"]:
+                del st.session_state["add_to_rep"][param2plot]
 
 
 class PlotLayout:

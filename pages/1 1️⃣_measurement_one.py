@@ -30,9 +30,13 @@ else:
     st.write("Please upload a zip file with measurement data or use example data. Choose above.")
 
 if "d1" in st.session_state:
+    # page changed
     if st.session_state["current_page"] != 1:
         st.session_state["current_page"] = 1
         st.session_state["reset_stats"] = True
+        if "add_to_rep" in st.session_state:
+            del st.session_state["add_to_rep"]
+    # page layout
     st.header("Subject", divider=True)
     st.dataframe(st.session_state["d1"].info)
     st.header("Temporal and Spatial", divider=True)
@@ -52,17 +56,28 @@ if "d1" in st.session_state:
     # add title
     bold = workbook.add_format({'bold': True})  # formatter
     worksheet.write_string(0, 0, title, bold)
+    row_num = 2
     # subject info
     info = pd.DataFrame.from_dict(st.session_state["d1"].info, orient="index")
     info.rename(columns={info.columns[0]: 'Subject'}, inplace=True)
-    info.to_excel(writer, sheet_name='Sheet1', startrow=2)
+    info.to_excel(writer, sheet_name='Sheet1', startrow=row_num)
+    row_num += info.shape[0] + 2
     # temporal and spatial
     ts = pd.DataFrame.from_dict(st.session_state["d1"].ts, orient="index")
     ts.rename(columns={ts.columns[0]: 'Temporal and Spatial'}, inplace=True)
-    ts.to_excel(writer, sheet_name='Sheet1', startrow=2+info.shape[0]+2)
+    ts.to_excel(writer, sheet_name='Sheet1', startrow=row_num)
+    row_num += ts.shape[0] + 2
     # format column width
     longest_string_length = max(max(len(str(i)) for i in ts.index), max(len(str(i)) for i in info.index))
     worksheet.set_column(0, 0, longest_string_length)
+    # add individual stats
+    for param2plot, stats in st.session_state["add_to_rep"].items():
+        worksheet.write_string(row_num, 0, param2plot, bold)
+        row_num += 1
+        stats["df_stats"].to_excel(writer, sheet_name='Sheet1', index=False, startrow=row_num)
+        row_num += len(stats["df_stats"]) + 2
+        worksheet.write_string(row_num, 0, stats["analysis"])
+        row_num += 2
     # save
     writer.close()
     st.download_button(
