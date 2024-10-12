@@ -38,9 +38,12 @@ if "d1" in st.session_state:
             del st.session_state["add_to_rep"]
     # page layout
     st.header("Subject", divider=True)
-    st.dataframe(st.session_state["d1"].info)
+    # convert to dataframe
+    info_df = pd.DataFrame(st.session_state["d1"].info.items(), columns=['Metadata', 'Value'])
+    st.dataframe(info_df, hide_index=True)
     st.header("Temporal and Spatial", divider=True)
-    st.dataframe(st.session_state["d1"].ts)
+    # st.dataframe(st.session_state["d1"].ts.fillna(''), hide_index=True)  # removing None (np.nan) leads to a warning due to mixed types
+    st.dataframe(st.session_state["d1"].ts, hide_index=True)
     st.header("Summary Grid", divider=True)
     PlotLayout(st.session_state["d1"])
     st.write("[Go to the Top](#load-measurement)")
@@ -58,17 +61,14 @@ if "d1" in st.session_state:
     worksheet.write_string(0, 0, title, bold)
     row_num = 2
     # subject info
-    info = pd.DataFrame.from_dict(st.session_state["d1"].info, orient="index")
-    info.rename(columns={info.columns[0]: 'Subject'}, inplace=True)
-    info.to_excel(writer, sheet_name='Sheet1', startrow=row_num)
-    row_num += info.shape[0] + 2
+    info_df.to_excel(writer, sheet_name='Sheet1', startrow=row_num, index=False)
+    row_num += info_df.shape[0] + 2
     # temporal and spatial
-    ts = pd.DataFrame.from_dict(st.session_state["d1"].ts, orient="index")
-    ts.rename(columns={ts.columns[0]: 'Temporal and Spatial'}, inplace=True)
-    ts.to_excel(writer, sheet_name='Sheet1', startrow=row_num)
+    ts = st.session_state["d1"].ts
+    ts.to_excel(writer, sheet_name='Sheet1', startrow=row_num, index=False)
     row_num += ts.shape[0] + 2
     # format column width
-    longest_string_length = max(max(len(str(i)) for i in ts.index), max(len(str(i)) for i in info.index))
+    longest_string_length = max(len(str(i)) for i in ts["Parameters"])
     worksheet.set_column(0, 0, longest_string_length)
     # add individual stats
     for param2plot, stats in st.session_state["add_to_rep"].items():

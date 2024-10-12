@@ -54,10 +54,9 @@ class DataSet:
             st.stop()
         self.info = self.process_info(d["Info.txt"])  # Metadata
         if "Temporal Distance.txt" not in d:
-            dct = {"Error": "File Temporal Distance.txt not found"}
+            self.ts = {"Error": "File Temporal Distance.txt not found"}
         else:
-            dct = self.process_ts(d["Temporal Distance.txt"])
-        self.ts = dct    
+            self.ts = self.process_ts(d["Temporal Distance.txt"])
         for item in c.kinematics:
             if item["left_file"] not in d or item["right_file"] not in d:
                 continue
@@ -89,21 +88,31 @@ class DataSet:
         values = [float(v) for v in df.loc[4].tolist()]
         dct = dict(zip(keys, values))
         # values from QRC
-        ts = {
-            "Speed, m/s": f"{dct["Speed"]:.2f}",
-            "Cadence, steps/min": f"{(dct["Left_Steps_Per_Minute_Mean"])+(dct["Right_Steps_Per_Minute_Mean"])/2:.0f}",
-            "Cycle Time, s": f"{dct["Cycle_Time_Mean"]:.2f}",
-            "Stride Length, cm": f"{dct["Stride_Length_Mean"]*100:.0f}",
-            "Stride Width, cm": f"{dct["Stride_Width_Mean"]*100:.1f}",
-            "Left Step Length, cm": f"{dct["Left_Step_Length_Mean"]*100:.0f}",
-            "Right Step Length, cm": f"{dct["Right_Step_Length_Mean"]*100:.0f}",
-            "Left Step Time, s": f"{dct["Left_Step_Time_Mean"]:.2f}",
-            "Right Step Time, s": f"{dct["Right_Step_Time_Mean"]:.2f}",
-            "Left Stance Time, %": f"{dct["Left_Stance_Time_Mean"]/dct["Left_Cycle_Time_Mean"]*100:.1f}",
-            "Right Stance Time, %": f"{dct["Right_Stance_Time_Mean"]/dct["Right_Cycle_Time_Mean"]*100:.1f}",
-            "Initial Double Limb Support, %": f"{dct["Double_Limb_Support_Time_Ave"]/2/dct["Cycle_Time_Mean"]*100:.1f}",
+        leftright = {
+            "Step Length, cm": (round(dct['Left_Step_Length_Mean']*100, 0), round(dct['Right_Step_Length_Mean']*100, 0)),
+            "Step Time, s": (round(dct['Left_Step_Time_Mean'], 2), round(dct['Right_Step_Time_Mean'], 2)),
+            "Stance, %": (round(dct['Left_Stance_Time_Mean']/dct['Left_Cycle_Time_Mean'] * 100, 1), round(dct['Right_Stance_Time_Mean']/dct['Right_Cycle_Time_Mean'] * 100, 1)),
+            "Initial Double Limb Support, %": (
+                round(dct['Right_Terminal_Double_Limb_Support_Time_Mean']/dct['Left_Cycle_Time_Mean'] * 100, 1),
+                round(dct['Right_Initial_Double_Limb_Support_Time_Mean']/dct['Right_Cycle_Time_Mean'] * 100, 1),
+            ),
         }
-        return ts
+        both = {
+            "Speed, m/s": round(dct['Speed'], 2),
+            "Cadence, steps/min": round((dct['Left_Steps_Per_Minute_Mean'] + dct['Right_Steps_Per_Minute_Mean'])/2, 0),
+            "Cycle Time, s": round(dct['Cycle_Time_Mean'], 2),
+            "Stride Length, cm": round(dct['Stride_Length_Mean']*100, 0),
+            "Stride Width, cm": round(dct['Stride_Width_Mean']*100, 1),
+        }
+        df_ts = pd.DataFrame(
+            {
+                "Parameters": list(both.keys()) + list(leftright.keys()),
+                "Both": list(both.values()) + [np.nan] * len(leftright),
+                "Left": [np.nan] * len(both) + [v[0] for v in leftright.values()],
+                "Right": [np.nan] * len(both) + [v[1] for v in leftright.values()],
+            }
+        )
+        return df_ts
     
     def process_dfs(self, file_pair):
         df_left = self.process_data_file(file_pair["left"])
