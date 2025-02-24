@@ -350,6 +350,54 @@ class Figure:
         return line
 
     def add_band(self, df_norm):
+        # Create a copy of the DataFrame to avoid modifying the original
+        df_norm_copy = df_norm.copy()
+        
+        # Calculate 1SD boundaries
+        df_norm_copy["Mean - SD"] = df_norm_copy["Mean"] - df_norm_copy["SD"]
+        df_norm_copy["Mean + SD"] = df_norm_copy["Mean"] + df_norm_copy["SD"]
+        
+        # Calculate 2SD boundaries
+        df_norm_copy["Mean - 2SD"] = df_norm_copy["Mean"] - 2 * df_norm_copy["SD"]
+        df_norm_copy["Mean + 2SD"] = df_norm_copy["Mean"] + 2 * df_norm_copy["SD"]
+        
+        # Duplicate 'Mean' column as 'Normative' for tooltip reference
+        df_norm_copy["Normative"] = df_norm_copy["Mean"]
+        
+        # Add the 2SD band with a more transparent gray fill
+        band_2sd = Band(
+            base="Gait cycle",
+            lower="Mean - 2SD",
+            upper="Mean + 2SD",
+            source=ColumnDataSource(df_norm_copy),
+            fill_color="gray",
+            fill_alpha=0.15,  # more transparent than the 1SD band
+        )
+        self.figure.add_layout(band_2sd)
+        
+        # Add the 1SD band (drawn on top of the 2SD band)
+        band_1sd = Band(
+            base="Gait cycle",
+            lower="Mean - SD",
+            upper="Mean + SD",
+            source=ColumnDataSource(df_norm_copy),
+            fill_color="gray",
+            fill_alpha=0.25,
+        )
+        self.figure.add_layout(band_1sd)
+        
+        # Add a line for the actual mean value using the 'Normative' column
+        self.figure.line(
+            "Gait cycle",
+            "Normative",
+            source=ColumnDataSource(df_norm_copy),
+            color="dimgray",
+            width=2,
+            line_dash="dashed",
+            name="Normative"
+        )
+
+    def add_band_classic(self, df_norm):
         df_norm["Mean - SD"] = df_norm["Mean"] - df_norm["SD"]
         df_norm["Mean + SD"] = df_norm["Mean"] + df_norm["SD"]
         band = Band(
@@ -382,6 +430,7 @@ class Plot:
     """Plot the data from the DataSet object"""
 
     def __init__(self, d):
+        st.markdown("Dashed gray line: normative Mean values. Dark gray band: ±1 SD. Light gray band: ±2 SD.")
         param2plot = st.selectbox(
             "You can choose one parameter to plot", 
             tuple(d.data2plot.keys()),
@@ -496,14 +545,15 @@ class PlotLayout:
 
     def __init__(self, d):
         st.markdown("All graphs show mean values, :red[red for Left] and :blue[blue for Right]")
-        st.markdown(":gray[Gray bands] show normative values +/- 1 SD")
-        st.markdown("Check [individual plots](#individual-plots) to see consistency and relevant statistics")
+        st.markdown("Gray bands show normative means ±1 standard deviation")
+        st.markdown("Check [interactive plots](#interactive-plots) to see more data")
 
         height = c.size["small_height"]
         width = c.size["small_width"]
         figs = {}
         for param, dfs in d.data2plot.items():
             fig = Figure(height=height, width=width, y_axis=dfs["y_axis"])
+            fig.figure.tools = []
             df = dfs["df_both"]
             for col in range(1, len(df.columns)):
                 column = df.columns[col]
@@ -511,7 +561,7 @@ class PlotLayout:
                 fig.add_line(df, column, color, 2)
             df_norm = dfs["df_norm"]
             if df_norm is not None:
-                fig.add_band(df_norm)
+                fig.add_band_classic(df_norm)
             fig.figure.title.text = param
             fig.figure.title.text_font_size = "16px"
             fig.figure.min_border_right = 20
@@ -523,16 +573,9 @@ class PlotLayout:
                 if param in figs:
                     gridrow.append(figs[param].figure)
                 else:
-                    # empty plot with No data label
+                    # placeholder in the layout
                     empty = Figure(height=height, width=width)
-                    no_data_label = Label(
-                        x=int(height / 2),
-                        y=int(width / 3),
-                        x_units="screen",
-                        y_units="screen",
-                        text="No data",
-                    )
-                    empty.figure.add_layout(no_data_label)
+                    empty.figure.tools = []                    
                     gridrow.append(empty.figure)
             gridrows.append(gridrow)
         grid = gridplot(gridrows, merge_tools=False, toolbar_options=dict(logo=None))

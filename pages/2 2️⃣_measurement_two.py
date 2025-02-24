@@ -47,7 +47,7 @@ if "d2" in st.session_state:
     st.header("Summary Grid", divider=True)
     PlotLayout(st.session_state["d2"])
     st.write("[Go to the Top](#load-measurement)")
-    st.header("Individual Plots", divider=True)
+    st.header("Interactive Plots", divider=True)
     Plot(st.session_state["d2"])
     st.write("[Go to the Top](#load-measurement)")
     
