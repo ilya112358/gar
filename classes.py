@@ -575,7 +575,9 @@ class PlotLayout:
                 else:
                     # placeholder in the layout
                     empty = Figure(height=height, width=width)
-                    empty.figure.tools = []                    
+                    empty.figure.tools = []
+                    # Add a dummy invisible renderer to suppress the missing renderers warning
+                    empty.figure.circle([], [], alpha=0)
                     gridrow.append(empty.figure)
             gridrows.append(gridrow)
         grid = gridplot(gridrows, merge_tools=False, toolbar_options=dict(logo=None))
