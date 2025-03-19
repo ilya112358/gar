@@ -4,6 +4,7 @@ import streamlit as st
 import zipfile
 from classes import DataSet, Plot, PlotLayout
 
+st.title("measurement one")
 uploaded_file = None
 col1, col2 = st.columns(2, vertical_alignment="center")
 with col1:
@@ -26,7 +27,7 @@ if "d1" in st.session_state:
     )
     st.title(f"{title}")
 else:
-    st.title("Load Measurement")
+    st.subheader("Load Measurement")
     st.write("Please upload a zip file with measurement data or use example data. Choose above.")
 
 if "d1" in st.session_state:
@@ -46,10 +47,10 @@ if "d1" in st.session_state:
     st.dataframe(st.session_state["d1"].ts, hide_index=True)
     st.header("Summary Grid", divider=True)
     PlotLayout(st.session_state["d1"])
-    st.write("[Go to the Top](#load-measurement)")
+    st.write("[Go to the Top](#measurement-one)")
     st.header("Interactive Plots", divider=True)
     Plot(st.session_state["d1"])
-    st.write("[Go to the Top](#load-measurement)")
+    st.write("[Go to the Top](#measurement-one)")
     
     # Write df in Excel format to memory and link to Download button
     output = BytesIO()
