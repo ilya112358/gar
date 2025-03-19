@@ -121,30 +121,10 @@ layout = [
 ]
 
 [colors]
-static = "orange"
+left = "red"
+right = "blue"
 mean = "black"
-color_list = [
-    "red",
-    "blue",
-    "green",
-    "cyan",
-    "magenta",
-    "lime",
-    "gray",
-    "navy",
-    "teal",
-    "olive",
-    "purple",
-    "maroon",
-    "aqua",
-    "fuchsia",
-    "silver",
-    "blueviolet",
-    "brown",
-    "darkorange",
-    "lightseagreen",
-    "deeppink"
-]
+static = "orange"
 
 [size]
 height = 600

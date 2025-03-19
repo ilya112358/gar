@@ -3,6 +3,7 @@ from bokeh.plotting import figure
 from bokeh.layouts import gridplot
 from bokeh.models import ColumnDataSource, Legend, Range1d, Label, Band
 from bokeh.models.tickers import SingleIntervalTicker
+from bokeh.palettes import viridis
 
 import os
 import numpy as np
@@ -450,16 +451,25 @@ class Plot:
         fig = Figure(y_axis=dfs["y_axis"])
         labels = []
         df = dfs[{"Left": "df_left", "Right": "df_right", "Both": "df_both"}[foot2plot]]
+        palette = viridis(len(df.columns) - 3)  # -(1st, Static, Mean)
         for col in range(1, len(df.columns)):
             column = df.columns[col]
-            if column == "Static":
-                color = c.colors["static"]
-            elif "Mean" in column and foot2plot != "Both":
-                color = c.colors["mean"]
+            if foot2plot == "Both":
+                if column == "Left Mean":
+                    color = c.colors["left"]
+                elif column == "Right Mean":
+                    color = c.colors["right"]
+                else:
+                    color = c.colors["mean"]  # black in case column names change
+                line = fig.add_line(df, column, color, 3)
             else:
-                color = c.colors["color_list"][col - 1]
-            width = 3 if "Mean" in column else 1
-            line = fig.add_line(df, column, color, width)
+                if column == "Static":
+                    color = c.colors["static"]
+                elif "Mean" in column:
+                    continue  # add in diff style?
+                else:
+                    color = palette[col - 1]
+                line = fig.add_line(df, column, color, 2)
             labels.append((column, [line]))
         df_norm = dfs["df_norm"]
         if df_norm is not None:
@@ -544,6 +554,7 @@ class PlotLayout:
     """Plot graphs in standard layout"""
 
     def __init__(self, d):
+        st.markdown("This is summary grid for Kinematic values")
         st.markdown("All graphs show mean values, :red[red for Left] and :blue[blue for Right]")
         st.markdown("Gray bands show normative means ±1 standard deviation")
         st.markdown("Check [interactive plots](#interactive-plots) to see more data")
@@ -557,7 +568,12 @@ class PlotLayout:
             df = dfs["df_both"]
             for col in range(1, len(df.columns)):
                 column = df.columns[col]
-                color = c.colors["color_list"][col - 1]
+                if column == "Left Mean":
+                    color = c.colors["left"]
+                elif column == "Right Mean":
+                    color = c.colors["right"]
+                else:
+                    color = c.colors["mean"]  # black in case column names change
                 fig.add_line(df, column, color, 2)
             df_norm = dfs["df_norm"]
             if df_norm is not None:
