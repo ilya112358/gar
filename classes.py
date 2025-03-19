@@ -5,14 +5,12 @@ from bokeh.models import ColumnDataSource, Legend, Range1d, Label, Band
 from bokeh.models.tickers import SingleIntervalTicker
 from bokeh.palettes import viridis
 
-import os
 import numpy as np
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 import toml
 
-from io import BytesIO
 
 class Config:
     __file = "config.toml"
