@@ -34,9 +34,14 @@ class DataSet:
     """
     A class used to represent a DataSet for processing and plotting.
 
+    Parameters
+    ----------
+    d : dict
+        A dictionary where keys are file names and values are dfs
+
     Attributes
     ----------
-    data2plot : dict
+    kinematics : dict
         A dictionary to store processed data for plotting.
         Each key is a parameter name, and each value is a dictionary containing the processed dataframes
         for left, right, both, optionally norm, stats and y-axis limits.
@@ -46,8 +51,8 @@ class DataSet:
         A dictionary containing temporal and spatial data from the "Temporal Distance.txt" file.
     """
 
-    def __init__(self, d):
-        self.data2plot = {}  # dictionary to store processed data for plotting
+    def __init__(self, d: dict):
+        self.kinematics = {}  # dictionary to store processed data for plotting
         if "Info.txt" not in d:
             st.error("File Info.txt not found")
             st.stop()
@@ -59,7 +64,7 @@ class DataSet:
         for item in c.kinematics:
             if item["left_file"] not in d or item["right_file"] not in d:
                 continue
-            self.data2plot[item["name"]] = self.process_dfs(
+            self.kinematics[item["name"]] = self.process_dfs(
                 {
                     "left": d[item["left_file"]],
                     "right": d[item["right_file"]],
@@ -254,14 +259,14 @@ class DataCompare:
         values from both datasets.
     """
 
-    def __init__(self, d1, d2):
+    def __init__(self, d1: DataSet, d2: DataSet):
         self.data2plot = {}
-        for item in d1.data2plot:
-            if item in d2.data2plot:
-                d_df_both = d1.data2plot[item]["df_both"].copy()
-                d2_df_both = d2.data2plot[item]["df_both"]
-                d_df_stats = d1.data2plot[item]["df_stats"].copy()
-                d2_df_stats = d2.data2plot[item]["df_stats"]
+        for item in d1.kinematics:
+            if item in d2.kinematics:
+                d_df_both = d1.kinematics[item]["df_both"].copy()
+                d2_df_both = d2.kinematics[item]["df_both"]
+                d_df_stats = d1.kinematics[item]["df_stats"].copy()
+                d2_df_stats = d2.kinematics[item]["df_stats"]
                 # connect d1_df_both and d2_df_both
                 # rename columns to avoid duplicates
                 d_df_both.rename(
@@ -428,17 +433,17 @@ class Figure:
 class Plot:
     """Plot the data from the DataSet object"""
 
-    def __init__(self, d):
+    def __init__(self, d: DataSet):
         st.markdown("Dashed gray line: normative Mean values. Dark gray band: ±1 SD. Light gray band: ±2 SD.")
         param2plot = st.selectbox(
             "You can choose one parameter to plot", 
-            tuple(d.data2plot.keys()),
+            tuple(d.kinematics.keys()),
             index=None,
         )
         if "add_to_rep" not in st.session_state:
             st.session_state["add_to_rep"] = {}
         if param2plot is not None:
-            dfs = d.data2plot[param2plot]
+            dfs = d.kinematics[param2plot]
             self.plot(param2plot, dfs)
             self.showstats(param2plot, dfs)
 
@@ -551,7 +556,7 @@ class Plot:
 class PlotLayout:
     """Plot graphs in standard layout"""
 
-    def __init__(self, d):
+    def __init__(self, d: DataSet):
         st.markdown("This is summary grid for Kinematic values")
         st.markdown("All graphs show mean values, :red[red for Left] and :blue[blue for Right]")
         st.markdown("Gray bands show normative means ±1 standard deviation")
@@ -560,7 +565,7 @@ class PlotLayout:
         height = c.size["small_height"]
         width = c.size["small_width"]
         figs = {}
-        for param, dfs in d.data2plot.items():
+        for param, dfs in d.kinematics.items():
             fig = Figure(height=height, width=width, y_axis=dfs["y_axis"])
             fig.figure.tools = []
             df = dfs["df_both"]
