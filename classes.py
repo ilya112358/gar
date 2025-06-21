@@ -1,7 +1,7 @@
 from bokeh.embed import file_html
 from bokeh.plotting import figure
 from bokeh.layouts import gridplot
-from bokeh.models import ColumnDataSource, Legend, Range1d, Label, Band
+from bokeh.models import ColumnDataSource, Legend, Range1d, Band
 from bokeh.models.tickers import SingleIntervalTicker
 from bokeh.palettes import viridis
 
@@ -13,17 +13,19 @@ import toml
 
 
 class Config:
-    __file = "config.toml"
+    file = "config.toml"
 
     def __init__(self):
-        with open(self.__file, "r") as f:
-            self.__config = toml.load(f)
-        self.kinematics = self.__config["kinematics"]
-        self.layout = self.__config["standard"]["layout"]
-        self.colors = self.__config["colors"]
-        self.size = self.__config["size"]
-        keys = self.__config["phases"]["names"]
-        values = self.__config["phases"]["ranges"]
+        with open(self.file, "r") as f:
+            self.config = toml.load(f)
+        self.info = self.config["info"]
+        self.temporal = self.config["temporal"]
+        self.kinematics = self.config["kinematics"]
+        self.layout = self.config["standard"]["layout"]
+        self.colors = self.config["colors"]
+        self.size = self.config["size"]
+        keys = self.config["phases"]["names"]
+        values = self.config["phases"]["ranges"]
         self.phases = dict(zip(keys, values))
 
 
@@ -53,14 +55,14 @@ class DataSet:
 
     def __init__(self, d: dict):
         self.kinematics = {}  # dictionary to store processed data for plotting
-        if "Info.txt" not in d:
-            st.error("File Info.txt not found")
+        if c.info['file'] not in d:
+            st.error(f"File {c.info['file']} not found")
             st.stop()
-        self.info = self.process_info(d["Info.txt"])  # Metadata
-        if "Temporal Distance.txt" not in d:
-            self.ts = {"Error": "File Temporal Distance.txt not found"}
+        self.info = self.process_info(d[c.info['file']])
+        if c.temporal['file'] not in d:
+            self.ts = {'Error': f"File {c.temporal['file']} not found"}
         else:
-            self.ts = self.process_ts(d["Temporal Distance.txt"])
+            self.ts = self.process_ts(d[c.temporal['file']])
         for item in c.kinematics:
             if item["left_file"] not in d or item["right_file"] not in d:
                 continue
@@ -243,7 +245,6 @@ class DataSet:
                 "Δ ROM": [stats_left[2] - stats_right[2]],
             }
         )
-
 
 
 class DataCompare:
@@ -510,13 +511,14 @@ class Plot:
         st.button("Reset stats and analysis", on_click=force_reset)
 
         # data_editor columns: 'required' to accept the row, 'disabled' to edit
+        no_edit = st.column_config.Column(disabled=True)
         column_config = {
             "Phase": st.column_config.Column(required=True),
             "% Start": st.column_config.NumberColumn(required=True, min_value=0, max_value=100),
             "% End": st.column_config.NumberColumn(required=True, min_value=0, max_value=100),
-            "L Max": st.column_config.Column(disabled=True), "L Min": st.column_config.Column(disabled=True), "L ROM": st.column_config.Column(disabled=True),
-            "R Max": st.column_config.Column(disabled=True), "R Min": st.column_config.Column(disabled=True), "R ROM": st.column_config.Column(disabled=True),
-            "Δ Max": st.column_config.Column(disabled=True), "Δ Min": st.column_config.Column(disabled=True), "Δ ROM": st.column_config.Column(disabled=True),
+            "L Max": no_edit, "L Min": no_edit, "L ROM": no_edit,
+            "R Max": no_edit, "R Min": no_edit, "R ROM": no_edit,
+            "Δ Max": no_edit, "Δ Min": no_edit, "Δ ROM": no_edit,
         }
 
         def df_on_change():

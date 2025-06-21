@@ -1,5 +1,7 @@
 import streamlit as st
-from classes import c
+import importlib
+import classes
+importlib.reload(classes)  # reload config
 
 st.session_state["current_page"] = 0
 st.set_page_config(

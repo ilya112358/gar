@@ -1,3 +1,9 @@
+[info]
+file = "Info.txt"
+
+[temporal]
+file = "Temporal Distance.txt"
+
 [[kinematics]]
 name = "Ankle Dorsiflexion"
 left_file = "Left Ankle Angles.txt"
