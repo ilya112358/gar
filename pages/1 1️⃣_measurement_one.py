@@ -82,7 +82,7 @@ if "d1" in st.session_state:
             row_num += 1
             stats["df_stats"].to_excel(writer, sheet_name='Sheet1', index=False, startrow=row_num)
             row_num += len(stats["df_stats"]) + 2
-            worksheet.write_string(row_num, 0, stats["analysis"])
+            worksheet.write_string(row_num, 0, stats["comments"])
             row_num += 2
         # save
         writer.close()

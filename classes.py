@@ -481,7 +481,13 @@ class Plot:
         fig.add_legend(labels)
         fig.render()
 
-    def showstats(self, param2plot, dfs):
+    def showstats(self, param2plot: str, dfs: dict):
+        st.markdown("##### Analysis")
+        st.markdown("Table below shows maximum, minimum and range of motion for left (L) and right (R) side during main gait cycle phases.")
+        st.markdown("You can edit the first three columns to customize gait cycle phases.")
+        st.markdown("It is also possible to copy and paste gait cycle phases from an Excel file.")
+
+        st.session_state.setdefault("analysis_by_param", {})
 
         def calc_stats(phases):
             "Create a combined dataframe for all phases: dict {'Full Cycle': (0, 100),}"
@@ -491,24 +497,26 @@ class Plot:
                 df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], phase=key, frames=value)
                 df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
             return df_combined
-        
-        st.markdown("###### Mean value statistics")
-        st.markdown("Table below shows maximum, minimum and range of motion for left (L) and right (R) side during main gait cycle phases.")
-        st.markdown("You can edit the first three columns to customize gait cycle phases.")
-        st.markdown("It is also possible to copy and paste gait cycle phases from an Excel file.")
-
-        # first run or reset or param2plot changed
-        if "df_stats" not in st.session_state or st.session_state["reset_stats"] or param2plot != st.session_state["param2plot"]:
+  
+        if "param2plot" not in st.session_state or st.session_state["reset_stats"]:
             st.session_state["df_stats"] = calc_stats(c.phases)
+            st.session_state["comments"] = ""
             st.session_state["reset_stats"] = False
-            st.session_state["param2plot"] = param2plot
-            if "analysis" in st.session_state:
-                st.session_state["analysis"] = ""
+        old_param = st.session_state.get("param2plot")
+        if old_param and old_param != param2plot:  # switched param2plot
+            st.session_state["analysis_by_param"][old_param] = [st.session_state["df_stats"], st.session_state["comments"]]
+            if param2plot in st.session_state["analysis_by_param"]:
+                st.session_state["df_stats"] = st.session_state["analysis_by_param"][param2plot][0]
+                st.session_state["comments"] = st.session_state["analysis_by_param"][param2plot][1]
+            else:
+                st.session_state["df_stats"] = calc_stats(c.phases)
+                st.session_state["comments"] = ""
+        st.session_state["param2plot"] = param2plot
 
         def force_reset():
             st.session_state["reset_stats"] = True
 
-        st.button("Reset stats and analysis", on_click=force_reset)
+        st.button("Reset stats and comments", on_click=force_reset)
 
         # data_editor columns: 'required' to accept the row, 'disabled' to edit
         no_edit = st.column_config.Column(disabled=True)
@@ -544,12 +552,12 @@ class Plot:
         st.data_editor(st.session_state["df_stats"], key="df_editor", on_change=df_on_change,
                        column_config=column_config, hide_index=True, num_rows="dynamic")
 
-        st.text_area("You may write a short analysis here", key="analysis")
+        st.text_area("You may write a short analysis here", key="comments")
 
         # checkbox to include in Excel report
         checked = param2plot in st.session_state["add_to_rep"]
         if st.checkbox(f"Include {param2plot} in Excel report", value=checked):
-            st.session_state["add_to_rep"][param2plot] = {"df_stats": st.session_state["df_stats"], "analysis": st.session_state["analysis"]} 
+            st.session_state["add_to_rep"][param2plot] = {"df_stats": st.session_state["df_stats"], "comments": st.session_state["comments"]} 
         else:
             if param2plot in st.session_state["add_to_rep"]:
                 del st.session_state["add_to_rep"][param2plot]
