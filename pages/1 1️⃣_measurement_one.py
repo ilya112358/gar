@@ -1,8 +1,7 @@
-from io import BytesIO
 import pandas as pd
 import streamlit as st
 import zipfile
-from classes import DataSet, Plot, PlotLayout
+from classes import DataSet, Plot, PlotLayout, Export
 
 st.title("measurement one")
 uploaded_file = None
@@ -48,47 +47,29 @@ if "d1" in st.session_state:
     category = st.selectbox(
         "You can choose the category of biomechanical parameters to plot", 
         ("Kinematics",),
-        index=None,
+#        index=None,
     )
     if category == "Kinematics":
         st.header(category, divider=True)
         st.subheader("Summary Grid")
         PlotLayout(st.session_state["d1"])
         st.write("[Go to the Top](#measurement-one)")
+
         st.subheader("Interactive Plots")
         Plot(st.session_state["d1"])
         st.write("[Go to the Top](#measurement-one)")
-        # Write df in Excel format to memory and link to Download button
-        output = BytesIO()
-        writer = pd.ExcelWriter(output, engine='xlsxwriter')
-        workbook = writer.book
-        worksheet = workbook.add_worksheet()  # writer.sheets['Sheet1']
-        # add title
-        bold = workbook.add_format({'bold': True})  # formatter
-        worksheet.write_string(0, 0, title, bold)
-        row_num = 2
-        worksheet.set_column(0, 0, 20)  # first col width=20
-        # subject info
-        info_df.to_excel(writer, sheet_name='Sheet1', startrow=row_num, index=False)
-        row_num += info_df.shape[0] + 2
-        # temporal and spatial
-        ts = st.session_state["d1"].ts
-        if hasattr(ts, 'to_excel'):  # if T&S were loaded into df
-            ts.to_excel(writer, sheet_name='Sheet1', startrow=row_num, index=False)
-            row_num += ts.shape[0] + 2
-        # add individual stats
-        for param2plot, stats in st.session_state["add_to_rep"].items():
-            worksheet.write_string(row_num, 0, param2plot, bold)
-            row_num += 1
-            stats["df_stats"].to_excel(writer, sheet_name='Sheet1', index=False, startrow=row_num)
-            row_num += len(stats["df_stats"]) + 2
-            worksheet.write_string(row_num, 0, stats["comments"])
-            row_num += 2
-        # save
-        writer.close()
+
+        # Single call to produce report bytes
+        report_bytes = Export.to_bytes(
+            title=title,
+            info_df=info_df,
+            data_obj=st.session_state["d1"],
+            stats_map=st.session_state["add_to_rep"]
+        )
+
         st.download_button(
             label="Download report.xlsx",
-            data=output.getvalue(),
+            data=report_bytes,
             file_name="report.xlsx",
-            mime="application/vnd.ms-excel"
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )

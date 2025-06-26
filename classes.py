@@ -11,6 +11,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 import toml
 
+from io import BytesIO
+
 
 class Config:
     file = "config.toml"
@@ -439,7 +441,7 @@ class Plot:
         param2plot = st.selectbox(
             "You can choose one parameter to plot", 
             tuple(d.kinematics.keys()),
-            index=None,
+#            index=None,
         )
         if "add_to_rep" not in st.session_state:
             st.session_state["add_to_rep"] = {}
@@ -643,3 +645,106 @@ class PlotCompare:
             labels.append((column, [line]))
         fig.add_legend(labels)
         fig.render()
+
+
+class Export:
+    """
+    Collects multiple DataFrame sections and writes them
+    into a single Excel sheet, returning a bytes payload.
+    """
+    def __init__(
+        self,
+        title: str,
+        info_df: pd.DataFrame,
+        data_obj,
+        stats_map: dict,
+        sheet_name: str
+    ):
+        self.title = title
+        self.info_df = info_df
+        self.ts = getattr(data_obj, "ts", None)
+        self.stats_map = stats_map
+        self.sheet_name = sheet_name
+
+        # In-memory workbook setup
+        self.output = BytesIO()
+        self.writer = pd.ExcelWriter(self.output, engine="xlsxwriter")
+        self.workbook = self.writer.book
+        self.worksheet = self.workbook.add_worksheet(self.sheet_name)
+        self.bold = self.workbook.add_format({"bold": True})
+
+        # layout: start writing data at row 2 (title goes at row 0)
+        self.current_row = 2
+        self.worksheet.set_column(0, 0, 20)
+
+    def write_title(self):
+        self.worksheet.write_string(0, 0, self.title, self.bold)
+
+    def write_info(self):
+        self.info_df.to_excel(
+            self.writer,
+            sheet_name=self.sheet_name,
+            startrow=self.current_row,
+            index=False
+        )
+        self.current_row += self.info_df.shape[0] + 2
+
+    def write_time_spatial(self):
+        if hasattr(self.ts, "to_excel"):
+            self.ts.to_excel(
+                self.writer,
+                sheet_name=self.sheet_name,
+                startrow=self.current_row,
+                index=False
+            )
+            self.current_row += self.ts.shape[0] + 2
+
+    def write_stats(self):
+        for param, block in self.stats_map.items():
+            # header
+            self.worksheet.write_string(self.current_row, 0, param, self.bold)
+            self.current_row += 1
+
+            # stats table
+            df_stats = block["df_stats"]
+            df_stats.to_excel(
+                self.writer,
+                sheet_name=self.sheet_name,
+                startrow=self.current_row,
+                index=False
+            )
+            self.current_row += df_stats.shape[0] + 2
+
+            # comments
+            self.worksheet.write_string(
+                self.current_row, 0, block.get("comments", "")
+            )
+            self.current_row += 2
+
+    def save(self) -> bytes:
+        self.writer.close()
+        return self.output.getvalue()
+
+    def export(self) -> bytes:
+        """Write everything and return raw Excel bytes in one call."""
+        self.write_title()
+        self.write_info()
+        self.write_time_spatial()
+        self.write_stats()
+        return self.save()
+
+    @classmethod
+    def to_bytes(
+        cls,
+        title: str,
+        info_df: pd.DataFrame,
+        data_obj,
+        stats_map: dict,
+        sheet_name: str = "Sheet1"
+    ) -> bytes:
+        """
+        Convenience entrypoint: do one call from Streamlit:
+           Export.to_bytes(...)
+        """
+        exporter = cls(title, info_df, data_obj, stats_map, sheet_name)
+        return exporter.export()
