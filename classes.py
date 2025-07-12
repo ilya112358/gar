@@ -60,9 +60,10 @@ class DataSet:
         if c.info['file'] not in d:
             st.error(f"File {c.info['file']} not found")
             st.stop()
-        self.info = self.process_info(d[c.info['file']])
+        self.process_info(d[c.info['file']])
         if c.temporal['file'] not in d:
-            self.ts = {'Error': f"File {c.temporal['file']} not found"}
+            cols = ["Parameters", "Both", "Left", "Right"]
+            self.ts = pd.DataFrame([{c: np.nan for c in cols}])            
         else:
             self.ts = self.process_ts(d[c.temporal['file']])
         for item in c.kinematics:
@@ -87,7 +88,8 @@ class DataSet:
         if "Folder Name" in dct:
             dct["Subsession"], dct["Test condition"] = (dct["Folder Name"].split("\\")[-2]).split("_")
             del dct["Folder Name"]
-        return dct
+        self.title = f"{dct['First Name']} {dct['Last Name']}, {dct['Creation date']}, {dct['Test condition']}"
+        self.info = pd.DataFrame(dct.items(), columns=['Metadata', 'Value'])
 
     def process_ts(self, df):
         # Remove first col (index), use first row as keys, fifth as values
@@ -656,13 +658,13 @@ class Export:
         self,
         title: str,
         info_df: pd.DataFrame,
-        data_obj,
+        ts_df: pd.DataFrame,
         stats_map: dict,
         sheet_name: str
     ):
         self.title = title
         self.info_df = info_df
-        self.ts = getattr(data_obj, "ts", None)
+        self.ts_df = ts_df
         self.stats_map = stats_map
         self.sheet_name = sheet_name
 
@@ -690,14 +692,13 @@ class Export:
         self.current_row += self.info_df.shape[0] + 2
 
     def write_time_spatial(self):
-        if hasattr(self.ts, "to_excel"):
-            self.ts.to_excel(
-                self.writer,
-                sheet_name=self.sheet_name,
-                startrow=self.current_row,
-                index=False
-            )
-            self.current_row += self.ts.shape[0] + 2
+        self.ts_df.to_excel(
+            self.writer,
+            sheet_name=self.sheet_name,
+            startrow=self.current_row,
+            index=False
+        )
+        self.current_row += self.ts_df.shape[0] + 2
 
     def write_stats(self):
         for param, block in self.stats_map.items():
@@ -736,9 +737,7 @@ class Export:
     @classmethod
     def to_bytes(
         cls,
-        title: str,
-        info_df: pd.DataFrame,
-        data_obj,
+        dataset: DataSet, 
         stats_map: dict,
         sheet_name: str = "Sheet1"
     ) -> bytes:
@@ -746,5 +745,5 @@ class Export:
         Convenience entrypoint: do one call from Streamlit:
            Export.to_bytes(...)
         """
-        exporter = cls(title, info_df, data_obj, stats_map, sheet_name)
+        exporter = cls(dataset.title, dataset.info, dataset.ts, stats_map, sheet_name)
         return exporter.export()
