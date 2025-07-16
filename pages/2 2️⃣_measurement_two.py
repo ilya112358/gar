@@ -46,7 +46,7 @@ else:
     st.dataframe(st.session_state[m["dataset"]].ts, hide_index=True)
     category = st.selectbox(
         "You can choose the category of biomechanical parameters to plot", 
-        ("Kinematics",),
+        ("Kinematics", "Kinetics", "EMG"),
 #        index=None,
     )
     if category == "Kinematics":
@@ -68,3 +68,5 @@ else:
             file_name="report.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+    else:
+        st.subheader("🚧👷‍♂️ Under construction!")
