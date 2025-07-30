@@ -22,6 +22,7 @@ class Config:
             self.config = toml.load(f)
         self.info = self.config["info"]
         self.temporal = self.config["temporal"]
+        self.gps = self.config["gps"]
         self.kinematics = self.config["kinematics"]
         self.layout = self.config["standard"]["layout"]
         self.colors = self.config["colors"]
@@ -36,23 +37,41 @@ c = Config()
 
 class DataSet:
     """
-    A class used to represent a DataSet for processing and plotting.
+    Load, process and organize gait analysis data for visualization.
+
+    This class takes raw DataFrames for various exported files
+    (metadata, temporal/spatial parameters, gait profile scores, kinematics)
+    and produces ready-to-plot structures
 
     Parameters
     ----------
-    d : dict
-        A dictionary where keys are file names and values are dfs
+    d : dict of str -> pandas.DataFrame
+        Mapping from expected file identifiers (e.g. `"Info.txt"`, 
+        `"Temporal Distance.txt"`, kinematics filenames) to their raw
+        DataFrame contents.
 
     Attributes
     ----------
     kinematics : dict
-        A dictionary to store processed data for plotting.
-        Each key is a parameter name, and each value is a dictionary containing the processed dataframes
-        for left, right, both, optionally norm, stats and y-axis limits.
-    info : dict
-        A dictionary containing metadata extracted from the "Info.txt" file.
-    ts : dict
-        A dictionary containing temporal and spatial data from the "Temporal Distance.txt" file.
+        For each gait parameter name, a dict with keys:
+        - `"df_left"`, `"df_right"`: DataFrames of mean curves per side  
+        - `"df_both"`: combined side curves  
+        - `"df_norm"`: normalized curves (if available)  
+        - `"df_stats"`: summary statistics (max, min, ROM)  
+        - `"y_axis"`: [ymin, ymax] for plotting limits  
+
+    info : pandas.DataFrame
+        Subject metadata table with columns `["Metadata", "Value"]`,
+        extracted from the Info file (name, date, test condition, etc.).
+
+    ts : pandas.DataFrame
+        Temporal and spatial parameters (speed, cadence, step length, stance %, etc.),
+        organized in a tidy table with columns `["Parameters", "Both", "Left", "Right"]`.
+
+    gps : tuple of (float, pandas.DataFrame)
+        - Overall Gait Profile Score (mean across metrics)  
+        - Per-metric Gait Variable Score summary as a DataFrame with columns
+          `["Metric", "Left", "Right"]`.
     """
 
     def __init__(self, d: dict):
@@ -66,6 +85,11 @@ class DataSet:
             self.ts = pd.DataFrame([{c: np.nan for c in cols}])            
         else:
             self.ts = self.process_ts(d[c.temporal['file']])
+        if c.gps['file'] not in d:
+            cols = ["Metrics", "Left", "Right"]
+            self.gps = (np.nan, pd.DataFrame([{c: np.nan for c in cols}]))
+        else:
+            self.gps = self.process_map(d[c.gps['file']])
         for item in c.kinematics:
             if item["left_file"] not in d or item["right_file"] not in d:
                 continue
@@ -124,6 +148,57 @@ class DataSet:
         )
         return df_ts
     
+    def process_map(self, df):
+        df = (
+            df
+            .iloc[:, 1:]                     # drop the first column
+            .rename(columns=df.iloc[0])      # promote row 0 to header
+            .iloc[4:]                        # drop rows 0–3
+            .reset_index(drop=True)          # re‑index 0…n‑1
+        )
+        row = df.iloc[0]
+        # Define GPS summary and all GVS median variables
+        gps_cols = ['Left_GPS_mean_MEAN', 'Right_GPS_mean_MEAN']
+        gvs_cols = [col for col in df.columns if col.endswith('_gvs_MEDIAN')]
+        # Combine and build a tidy record list
+        records = []
+        for col in gps_cols + gvs_cols:
+            if col.startswith(('Left_', 'Right_')):
+                side_label, metric = col.split('_', 1)
+            else:
+                side_label, metric = col.split(' ', 1)
+            records.append({
+                'metric': metric,
+                'side': side_label,
+                'value': row[col]
+            })
+        overall = row['Overall_GPS_mean_MEAN']
+        tidy_df = pd.DataFrame(records)
+        pivoted = tidy_df.pivot(index='metric', columns='side', values='value').reset_index()
+        # Rename metrics
+        old_to_new = {
+            'GPS_mean_MEAN': 'Gait Profile Score',
+            'Pelvic Angles_X_gvs_MEDIAN': "Pelvis Tilt",
+            'Pelvic Angles_Y_gvs_MEDIAN': "Pelvis Obl",
+            'Pelvic Angles_Z_gvs_MEDIAN': "Pelvis Rot",
+            'Hip Angles_X_gvs_MEDIAN': 'Hip Fle/Ext',
+            'Hip Angles_Y_gvs_MEDIAN': 'Hip Add/Abd',
+            'Hip Angles_Z_gvs_MEDIAN': 'Hip Rot',
+            'Knee Angles_X_gvs_MEDIAN': "Knee Fle/Ext",
+            'Ankle Angles_X_gvs_MEDIAN': 'Ankle Dor/Pla',
+            'Foot Progression_Z_gvs_MEDIAN': 'Foot Prog',
+        }
+        pivoted['metric'] = pivoted['metric'].map(old_to_new).fillna(pivoted['metric'])
+        desired_order = list(old_to_new.values())
+        pivoted = (
+            pivoted
+            .set_index('metric')      # make metrics the index…
+            .loc[desired_order]       # …and pick them in the right order
+            .reset_index()            # back to a normal column
+        )
+        pivoted.rename(columns={'metric':'Metric'}, inplace=True)
+        return (overall, pivoted)
+
     def process_dfs(self, file_pair):
         df_left = self.process_data_file(file_pair["left"])
         df_right = self.process_data_file(file_pair["right"])

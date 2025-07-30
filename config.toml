@@ -4,6 +4,9 @@ file = "Info.txt"
 [temporal]
 file = "Temporal Distance.txt"
 
+[gps]
+file = "MAP.txt"
+
 [[kinematics]]
 name = "Ankle Dorsiflexion"
 left_file = "Left Ankle Angles.txt"

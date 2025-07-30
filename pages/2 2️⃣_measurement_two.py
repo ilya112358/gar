@@ -44,6 +44,9 @@ else:
     st.header("Temporal and Spatial", divider=True)
     # st.dataframe(st.session_state[m["dataset"]].ts.fillna(''), hide_index=True)  # removing None (np.nan) leads to a warning due to mixed types
     st.dataframe(st.session_state[m["dataset"]].ts, hide_index=True)
+    st.header("Gait Profile Score", divider=True)
+    st.subheader(f"Overall GPS: {st.session_state[m["dataset"]].gps[0]}")
+    st.dataframe(st.session_state[m["dataset"]].gps[1], hide_index=True)
     category = st.selectbox(
         "You can choose the category of biomechanical parameters to plot", 
         ("Kinematics", "Kinetics", "EMG"),
