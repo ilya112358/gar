@@ -26,9 +26,19 @@ if m["dataset"] not in st.session_state:
                 uploaded_file = m["archive"]
     if uploaded_file is not None:
         with zipfile.ZipFile(uploaded_file) as zf:
-            # make a dict where zf.namelist() will be the keys and the values will be dfs read from the files
-            d = {x: pd.read_csv(zf.open(x), sep="\t") for x in zf.namelist()}
-            st.session_state[m["dataset"]] = DataSet(d)
+            # all file paths (skip folders)
+            all_members = [m for m in zf.namelist() if not m.endswith('/')]
+            # if there's an Export/ folder, use only its contents
+            if any(m.startswith('Export/') for m in all_members):
+                members = [m for m in all_members if m.startswith('Export/')]
+            else:
+                members = all_members
+            # read each TSV into a DataFrame, keyed by its filename
+            data_dict = {
+                path.rsplit('/', 1)[-1]: pd.read_csv(zf.open(path), sep='\t')
+                for path in members
+            }
+            st.session_state[m["dataset"]] = DataSet(data_dict)
             st.rerun()
     st.subheader("Load Measurement")
     st.write("Please upload a zip file with measurement data or use example data ☝")
