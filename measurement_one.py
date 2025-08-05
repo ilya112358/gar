@@ -4,11 +4,11 @@ import zipfile
 from classes import DataSet, Plot, PlotLayout, Export
 
 m = {
-    "title": "measurement two",
-    "dataset": "d2",
-    "archive": "Archive/Data2.zip",
-    "page": 2,
-    "top": "[Go to the Top](#measurement-two)"
+    "title": "Measurement One",
+    "dataset": "d1",
+    "archive": "Examples/Data1.zip",
+    "page": 1,
+    "top": "[Go to the Top](#measurement-one)"
 }
 
 st.header(m["title"])
