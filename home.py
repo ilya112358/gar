@@ -27,7 +27,7 @@ def home():
     st.write("This is the multi-page web dashboard")
     st.write("👈 Use the sidebar to navigate between pages")
     st.write("- Press **Add Measurement** to load and visualize data from the dataset (up to 7 measurements)")
-    st.write("- Choose **Compare** to compare the two measurements")
+    st.write("- Choose **Compare** to compare any two loaded measurements")
     st.write("- Choose **Home** and reload the page in the browser to start again")
     st.write("⬆️ Upload data exported from Visual3D or use example data for demonstration")
     st.write("📊 The following data is processed:")
@@ -132,21 +132,43 @@ def make_measurement_page(m: dict):
     return _page
 
 def comparison():
-    if "d1" not in st.session_state or "d2" not in st.session_state:
-        st.error("Please load both measurements first!", icon="🚨")
-        st.stop()
-
     st.title("Comparison")
-    st.markdown("This page allows you to compare the two measurements.")
-    st.markdown("## Measurement One:")
-    st.dataframe(st.session_state["d1"].info)
-    st.markdown("## Measurement Two:")
-    st.dataframe(st.session_state["d2"].info)
-    st.markdown("You can compare parameters present in both measurements.")
-    st.markdown("Graphs are solid lines for the first measurement and dashed lines for the second.")
-    dc = DataCompare(st.session_state["d1"], st.session_state["d2"])
+    st.markdown("Pick any **two** loaded measurements to compare.")
+
+    # Build a dict: {title: dataset_key} for loaded measurements
+    loaded = {
+        m["title"]: m["dataset"]
+        for m in st.session_state.get("pages", [])
+        if m["dataset"] in st.session_state
+    }
+    if len(loaded) < 2:
+        st.error("Please load at least two measurements first!", icon="🚨")
+        st.stop()
+    chosen_titles = st.multiselect(
+        "Choose two measurements",
+        options=list(loaded.keys()),
+        default=list(loaded.keys())[:2],
+        max_selections=2
+    )
+    if len(chosen_titles) != 2:
+        st.info("Select exactly two measurements to proceed.")
+        st.stop()
+    key_a, key_b = loaded[chosen_titles[0]], loaded[chosen_titles[1]]
+    ds_a, ds_b = st.session_state[key_a], st.session_state[key_b]
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"### {chosen_titles[0]}")
+        st.dataframe(ds_a.info, hide_index=True)
+    with col2:
+        st.markdown(f"### {chosen_titles[1]}")
+        st.dataframe(ds_b.info, hide_index=True)
+
+    st.markdown("You can only compare parameters present in **both** measurements.")
+    st.markdown("Graphs are **solid** for the first measurement and **dashed** for the second.")
+    dc = DataCompare(ds_a, ds_b)
     param = st.selectbox("Select parameter", list(dc.data2plot.keys()))
-    pc = PlotCompare(dc, param)
+    PlotCompare(dc, param)
 
 st.set_page_config(
     page_title="Gait Analysis Report", layout="wide"
