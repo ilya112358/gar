@@ -41,9 +41,14 @@ def home():
 
 def measurement(m):
     st.header(m["title"])
-    if "current_page" not in st.session_state:
-        st.header("👈 Please go to Home page to start a new session!")
-        st.stop()
+    # if "current_page" not in st.session_state:
+    #     st.header("👈 Please go to Home page to start a new session!")
+    #     st.stop()
+    # if page changed, reset analysis and export
+    if st.session_state["current_page"] != m["page"]:
+        st.session_state["current_page"] = m["page"]
+        st.session_state["reset_stats"] = True
+        st.session_state.pop("add_to_rep", None)
     if m["dataset"] not in st.session_state:
         uploaded_file = None
         col1, col2 = st.columns(2, vertical_alignment="center")
@@ -73,11 +78,6 @@ def measurement(m):
         st.write("Please upload a zip file with measurement data or use example data ☝")
     else:
         st.title(st.session_state[m["dataset"]].title)
-        # if page changed, reset analysis and export
-        if st.session_state["current_page"] != m["page"]:
-            st.session_state["current_page"] = m["page"]
-            st.session_state["reset_stats"] = True
-            st.session_state.pop("add_to_rep", None)
         st.header("Subject", divider=True)
         st.dataframe(st.session_state[m["dataset"]].info, hide_index=True)
         st.header("Temporal and Spatial", divider=True)
@@ -96,20 +96,24 @@ def measurement(m):
             st.subheader("Summary Grid")
             PlotLayout(st.session_state[m["dataset"]])
             st.write(m["link_top"])
-            st.subheader("Interactive Plots")
-            Plot(st.session_state[m["dataset"]])
-            st.write(m["link_top"])
 
-            report_bytes = Export.to_bytes(
-                dataset=st.session_state[m["dataset"]],
-                stats_map=st.session_state["add_to_rep"]
-            )
-            st.download_button(
-                label="Download report.xlsx",
-                data=report_bytes,
-                file_name="report.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            @st.fragment
+            def individual_plot():
+                st.subheader("Interactive Plots")
+                Plot(st.session_state[m["dataset"]])
+                st.write(m["link_top"])
+                report_bytes = Export.to_bytes(
+                    dataset=st.session_state[m["dataset"]],
+                    stats_map=st.session_state["add_to_rep"]
+                )
+                st.download_button(
+                    label="Download report.xlsx",
+                    data=report_bytes,
+                    file_name="report.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+            individual_plot()
         else:
             st.subheader("🚧👷‍♂️ Under construction!")
 
