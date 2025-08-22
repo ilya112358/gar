@@ -511,19 +511,33 @@ class Figure:
 
 
 class Plot:
-    """Plot the data from the DataSet object"""
+    """Individual parameter plot"""
 
-    def __init__(self, d: DataSet):
-        st.markdown("Dashed gray line: normative Mean values. Dark gray band: ±1 SD. Light gray band: ±2 SD.")
+    def __init__(self, dataset_key: str):
+        self.d = st.session_state[dataset_key]  # DataSet
+        self.config_key = f"{dataset_key}_Plot" # "d1_Plot"
+        # Initialize or load self.state
+        if self.config_key not in st.session_state["plot_configs"]:
+            st.session_state["plot_configs"][self.config_key] = {
+                "selected_param": None,
+            }
+        self.state = st.session_state["plot_configs"][self.config_key]
+        # Use persistent selected_param or default to first option
+        default_idx = 0
+        if self.state["selected_param"] and self.state["selected_param"] in self.d.kinematics:
+            default_idx = list(self.d.kinematics.keys()).index(self.state["selected_param"])        
         param2plot = st.selectbox(
             "You can choose one parameter to plot", 
-            tuple(d.kinematics.keys()),
-#            index=None,
+            tuple(self.d.kinematics.keys()),
+            index=default_idx,
+            key=f"{self.config_key}_param_select"            
         )
-        if "add_to_rep" not in st.session_state:
-            st.session_state["add_to_rep"] = {}
+        # Update state when parameter changes
+        if param2plot != self.state["selected_param"]:
+            self.state["selected_param"] = param2plot
+        # Plot and show stats and comments
         if param2plot is not None:
-            dfs = d.kinematics[param2plot]
+            dfs = self.d.kinematics[param2plot]
             self.plot(param2plot, dfs)
             self.showstats(param2plot, dfs)
 
@@ -559,43 +573,44 @@ class Plot:
             fig.add_band(df_norm)
         fig.add_legend(labels)
         fig.render()
+        st.markdown("(dashed gray line: normative Mean values, dark gray band: ±1 SD, light gray band: ±2 SD)")
 
     def showstats(self, param2plot: str, dfs: dict):
         st.markdown("##### Analysis")
-        st.markdown("Table below shows maximum, minimum and range of motion for left (L) and right (R) side during main gait cycle phases.")
+        st.markdown("Table below shows maximum, minimum and range of motion for the left (L) and right (R) side during main gait cycle phases.")
         st.markdown("You can edit the first three columns to customize gait cycle phases.")
         st.markdown("It is also possible to copy and paste gait cycle phases from an Excel file.")
 
-        st.session_state.setdefault("analysis_by_param", {})
+        self.state.setdefault("analysis_by_param", {})  # persistent stats and comments
 
-        def calc_stats(phases):
-            "Create a combined dataframe for all phases: dict {'Full Cycle': (0, 100),}"
-
+        def calc_stats(phases: dict):
+            """Create a combined dataframe for all phases: {'Full Cycle': (0, 100),}"""
             df_combined = pd.DataFrame()
             for key, value in phases.items():
                 df_stats = DataSet.create_df_stats(dfs["df_left"], dfs["df_right"], phase=key, frames=value)
                 df_combined = pd.concat([df_combined, df_stats], ignore_index=True)
             return df_combined
   
-        if "param2plot" not in st.session_state or st.session_state["reset_stats"]:
-            st.session_state["df_stats"] = calc_stats(c.phases)
-            st.session_state["comments"] = ""
-            st.session_state["reset_stats"] = False
-        old_param = st.session_state.get("param2plot")
-        if old_param and old_param != param2plot:  # switched param2plot
-            st.session_state["analysis_by_param"][old_param] = [st.session_state["df_stats"], st.session_state["comments"]]
-            if param2plot in st.session_state["analysis_by_param"]:
-                st.session_state["df_stats"] = st.session_state["analysis_by_param"][param2plot][0]
-                st.session_state["comments"] = st.session_state["analysis_by_param"][param2plot][1]
-            else:
-                st.session_state["df_stats"] = calc_stats(c.phases)
-                st.session_state["comments"] = ""
-        st.session_state["param2plot"] = param2plot
+        # Initialize or restore state for this specific parameter
+        if param2plot not in self.state["analysis_by_param"]:
+            self.state["analysis_by_param"][param2plot] = {
+                "df_stats": calc_stats(c.phases),
+                "comments": "",
+                "needs_reset": False  # Parameter-specific reset flag
+            }
+        # Get reference to this parameter's state
+        param_state = self.state["analysis_by_param"][param2plot]
+
+        # Reset stats if needed for this specific parameter
+        if param_state.get("needs_reset", False):
+            param_state["df_stats"] = calc_stats(c.phases)
+            param_state["comments"] = ""
+            param_state["needs_reset"] = False  # Clear the reset flag
 
         def force_reset():
-            st.session_state["reset_stats"] = True
+            param_state["needs_reset"] = True
 
-        st.button("Reset stats and comments", on_click=force_reset)
+        st.button("Reset stats and comments", on_click=force_reset, key=f"{self.config_key}_{param2plot}_reset_btn")
 
         # data_editor columns: 'required' to accept the row, 'disabled' to edit
         no_edit = st.column_config.Column(disabled=True)
@@ -607,12 +622,12 @@ class Plot:
             "R Max": no_edit, "R Min": no_edit, "R ROM": no_edit,
             "Δ Max": no_edit, "Δ Min": no_edit, "Δ ROM": no_edit,
         }
+        editor_key = f"{self.config_key}_{param2plot}_editor"
 
         def df_on_change():
-            "change df_stats to fit df_editor, called from on_change="
-
-            state = st.session_state["df_editor"]
-            df = st.session_state["df_stats"]
+            """synchronize df_stats to data_editor"""
+            state = st.session_state[editor_key]
+            df = param_state["df_stats"]
             # Edited
             for index, updates in state["edited_rows"].items():
                 for key, value in updates.items():
@@ -625,21 +640,42 @@ class Plot:
             for index in state["deleted_rows"]:
                 df.drop(index, inplace=True)
             phases = dict(zip(df["Phase"], zip(df["% Start"], df["% End"])))
-            df_stats = calc_stats(phases)
-            st.session_state["df_stats"] = df_stats
+            param_state["df_stats"] = calc_stats(phases)
+        
+        st.data_editor(
+            param_state["df_stats"], 
+            key=editor_key,
+            on_change=df_on_change,
+            column_config=column_config, 
+            hide_index=True, 
+            num_rows="dynamic"
+        )
 
-        st.data_editor(st.session_state["df_stats"], key="df_editor", on_change=df_on_change,
-                       column_config=column_config, hide_index=True, num_rows="dynamic")
+        comments_key = f"{self.config_key}_{param2plot}_comments"
+        comments = st.text_area(
+            "You may write a short analysis here", 
+            value=param_state["comments"],
+            key=comments_key
+        )
+        # Update comments in state when changed
+        if comments != param_state["comments"]:
+            param_state["comments"] = comments
 
-        st.text_area("You may write a short analysis here", key="comments")
-
-        # checkbox to include in Excel report
-        checked = param2plot in st.session_state["add_to_rep"]
-        if st.checkbox(f"Include {param2plot} in Excel report", value=checked):
-            st.session_state["add_to_rep"][param2plot] = {"df_stats": st.session_state["df_stats"], "comments": st.session_state["comments"]} 
+        # Checkbox to include in Excel report
+        checked = param2plot in self.state.get("add_to_rep", {})
+        if st.checkbox(
+            f"Include {param2plot} in Excel report", 
+            value=checked,
+            key=f"{self.config_key}_{param2plot}_include"
+        ):
+            self.state.setdefault("add_to_rep", {})
+            self.state["add_to_rep"][param2plot] = {
+                "df_stats": param_state["df_stats"], 
+                "comments": param_state["comments"]
+            } 
         else:
-            if param2plot in st.session_state["add_to_rep"]:
-                del st.session_state["add_to_rep"][param2plot]
+            if "add_to_rep" in self.state and param2plot in self.state["add_to_rep"]:
+                del self.state["add_to_rep"][param2plot]
 
 
 class PlotLayout:
