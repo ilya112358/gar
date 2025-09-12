@@ -24,7 +24,9 @@ class Config:
         self.temporal = self.config["temporal"]
         self.gps = self.config["gps"]
         self.kinematics = self.config["kinematics"]
-        self.layout = self.config["standard"]["layout"]
+        self.kinetics = self.config["kinetics"]
+        self.layout_kinematics = self.config["standard"]["layout_kinematics"]
+        self.layout_kinetics = self.config["standard"]["layout_kinetics"]
         self.colors = self.config["colors"]
         self.size = self.config["size"]
         keys = self.config["phases"]["names"]
@@ -76,6 +78,7 @@ class DataSet:
 
     def __init__(self, d: dict):
         self.kinematics = {}  # dictionary to store processed data for plotting
+        self.kinetics = {}  
         if c.info['file'] not in d:
             st.error(f"File {c.info['file']} not found")
             st.stop()
@@ -98,7 +101,20 @@ class DataSet:
                     "left": d[item["left_file"]],
                     "right": d[item["right_file"]],
                     "norm": d[item["norm_file"]] if item["norm_file"] in d else None,
-                    "y_axis": item["y_axis"] if "y_axis" in item else None,
+                    "y_axis": item.get("y_axis"),
+                }
+            )
+        for item in c.kinetics:
+            if item["left_file"] not in d or item["right_file"] not in d:
+                continue
+            self.kinetics[item["name"]] = self.process_dfs(
+                {
+                    "left": d[item["left_file"]],
+                    "right": d[item["right_file"]],
+                    "norm": d[item["norm_file"]] if item["norm_file"] in d else None,
+                    "y_axis": item.get("y_axis"),
+                    "y_label": item.get("y_label"),
+                    "x_label": item.get("x_label"),
                 }
             )
     
@@ -234,6 +250,8 @@ class DataSet:
             "df_norm": df_norm,
             "df_stats": df_stats,
             "y_axis": y_axis,
+            "y_label": file_pair.get("y_label") or "Angle, degrees",
+            "x_label": file_pair.get("x_label") or "Gait cycle, %"
         }
 
     def process_data_file(self, df):
@@ -396,7 +414,7 @@ class Figure:
         self,
         y_axis=None,
         x_label="Gait cycle, %",
-        y_label="Angle, degrees",
+        y_label=None,
         height=c.size["height"],
         width=c.size["width"],
     ):
@@ -545,7 +563,7 @@ class Plot:
         st.markdown(f"### {bioparameter}")
         opts = ["Left", "Right", "Both"]
         foot2plot = st.radio(f"Show plot for {bioparameter}", opts, horizontal=True, index=2)
-        fig = Figure(y_axis=dfs["y_axis"])
+        fig = Figure(y_axis=dfs["y_axis"], y_label=dfs["y_label"])
         labels = []
         df = dfs[{"Left": "df_left", "Right": "df_right", "Both": "df_both"}[foot2plot]]
         palette = viridis(len(df.columns) - 3)  # -(1st, Static, Mean)
@@ -681,17 +699,18 @@ class Plot:
 class PlotLayout:
     """Plot graphs in standard layout"""
 
-    def __init__(self, d: DataSet):
-        st.markdown("This is summary grid for Kinematic values")
+    def __init__(self, d: DataSet, domain: str = "kinematics"):
+        st.markdown(f"This is the summary grid for {domain.title()} values")
         st.markdown("All graphs show mean values, :red[red for Left] and :blue[blue for Right]")
         st.markdown("Gray bands show normative means ±1 standard deviation")
         st.markdown("Check [interactive plots](#interactive-plots) to see more data")
 
+        data_dict = getattr(d, domain)
         height = c.size["small_height"]
         width = c.size["small_width"]
         figs = {}
-        for param, dfs in d.kinematics.items():
-            fig = Figure(height=height, width=width, y_axis=dfs["y_axis"])
+        for param, dfs in data_dict.items():
+            fig = Figure(height=height, width=width, y_axis=dfs["y_axis"], y_label=dfs["y_label"], x_label=dfs["x_label"])
             fig.figure.tools = []
             df = dfs["df_both"]
             for col in range(1, len(df.columns)):
@@ -710,8 +729,9 @@ class PlotLayout:
             fig.figure.title.text_font_size = "16px"
             fig.figure.min_border_right = 20
             figs[param] = fig
+        layout = getattr(c, f"layout_{domain}")
         gridrows = []
-        for row in c.layout:
+        for row in layout:
             gridrow = []
             for param in row:
                 if param in figs:
@@ -732,8 +752,8 @@ class PlotLayout:
                 "cdn",
             ),
             # add some breathing space around the grid
-            height=height * len(c.layout),
-            width=width * len(c.layout[0]) + 50,
+            height=height * len(layout),
+            width=width * len(layout[0]) + 50,
         )
 
 

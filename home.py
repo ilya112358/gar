@@ -119,6 +119,11 @@ def measurement(m):
                 )
 
             individual_plot()
+        elif category == "Kinetics":
+            st.header(category, divider=True)
+            st.subheader("Summary Grid")
+            PlotLayout(st.session_state[m["dataset"]], "kinetics")
+            st.write(m["link_top"])
         else:
             st.subheader("🚧👷‍♂️ Under construction!")
 

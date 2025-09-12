@@ -105,28 +105,145 @@ right_file = "Right Pelvic Rotation.txt"
 norm_file = "Norm Pelvic Angles Z.txt"
 y_axis = [-15, 15]
 
-#[[kinetics]]
-#name = "Anterior GRF"
-#left_file = "Left GRF X.txt"
-#right_file = "Right GRF X.txt"
+[[kinetics]]
+name = "Hip Extensor Moment"
+left_file = "Left Hip Extensor Moment.txt"
+right_file = "Right Hip Extensor Moment.txt"
+norm_file = "Norm Hip Moment X.txt"
+y_axis = [-1.5, 1.5]
+y_label = "Moment, Nm/kg"
 
-#[[kinetics]]
-#name = "Medial GRF"
-#left_file = "Left GRF Y.txt"
-#right_file = "Right GRF Y.txt"
+[[kinetics]]
+name = "Hip Valgus Moment"
+left_file = "Left Hip Valgus Moment.txt"
+right_file = "Right Hip Valgus Moment.txt"
+norm_file = "Norm Hip Moment Y.txt"
+y_axis = [-0.5, 1.2]
+y_label = "Moment, Nm/kg"
 
-#[[kinetics]]
-#name = "Vertical GRF"
-#left_file = "Left GRF Z.txt"
-#right_file = "Right GRF Z.txt"
+[[kinetics]]
+name = "Knee Extensor Moment"
+left_file = "Left Knee Extensor Moment.txt"
+right_file = "Right Knee Extensor Moment.txt"
+norm_file = "Norm Knee Moment X.txt"
+y_axis = [-1.0, 1.0]
+y_label = "Moment, Nm/kg"
+
+[[kinetics]]
+name = "Knee Valgus Moment"
+left_file = "Left Knee Valgus Moment.txt"
+right_file = "Right Knee Valgus Moment.txt"
+norm_file = "Norm Knee Moment Y.txt"
+y_axis = [-0.4, 0.8]
+y_label = "Moment, Nm/kg"
+
+[[kinetics]]
+name = "Ankle Plantarflexor Moment"
+left_file = "Left Ankle Plantarflexor Moment.txt"
+right_file = "Right Ankle Plantarflexor Moment.txt"
+norm_file = "Norm Ankle Moment X.txt"
+y_axis = [-0.5, 2.0]
+y_label = "Moment, Nm/kg"
+
+[[kinetics]]
+name = "Ankle Eversion Moment"
+left_file = "Left Ankle Eversion Moment.txt"
+right_file = "Right Ankle Eversion Moment.txt"
+norm_file = "Norm Ankle Moment Y.txt"
+y_axis = [-0.3, 0.6]
+y_label = "Moment, Nm/kg"
+
+[[kinetics]]
+name = "Hip Sagittal Power Generation"
+left_file = "Left Hip Sagittal Power Generation.txt"
+right_file = "Right Hip Sagittal Power Generation.txt"
+norm_file = "Norm Hip Power Generation X.txt"
+y_axis = [-2, 2]
+y_label = "Power, W/kg"
+
+[[kinetics]]
+name = "Hip Frontal Power Generation"
+left_file = "Left Hip Frontal Power Generation.txt"
+right_file = "Right Hip Frontal Power Generation.txt"
+norm_file = "Norm Hip Power Generation Y.txt"
+y_axis = [-1, 1]
+y_label = "Power, W/kg"
+
+[[kinetics]]
+name = "Knee Sagittal Power Generation"
+left_file = "Left Knee Sagittal Power Generation.txt"
+right_file = "Right Knee Sagittal Power Generation.txt"
+norm_file = "Norm Knee Power Generation X.txt"
+y_axis = [-2, 2]
+y_label = "Power, W/kg"
+
+[[kinetics]]
+name = "Knee Frontal Power Generation"
+left_file = "Left Knee Frontal Power Generation.txt"
+right_file = "Right Knee Frontal Power Generation.txt"
+norm_file = "Norm Knee Power Generation Y.txt"
+y_axis = [-1, 1]
+y_label = "Power, W/kg"
+
+[[kinetics]]
+name = "Ankle Sagittal Power Generation"
+left_file = "Left Ankle Sagittal Power Generation.txt"
+right_file = "Right Ankle Sagittal Power Generation.txt"
+norm_file = "Norm Ankle Power Generation X.txt"
+y_axis = [-1, 5]
+y_label = "Power, W/kg"
+
+[[kinetics]]
+name = "Ankle Frontal Power Generation"
+left_file = "Left Ankle Frontal Power Generation.txt"
+right_file = "Right Ankle Frontal Power Generation.txt"
+norm_file = "Norm Ankle Power Generation Y.txt"
+y_axis = [-1, 1]
+y_label = "Power, W/kg"
+
+[[kinetics]]
+name = "Anterior GRF"
+left_file = "Left Anterior GRF.txt"
+right_file = "Right Anterior GRF.txt"
+norm_file = "Norm GRF X.txt"
+y_axis = [-0.3, 0.3]
+y_label = "Force, N/BW"
+x_label = "Stance phase, %"
+
+[[kinetics]]
+name = "Medial GRF"
+left_file = "Left Medial GRF.txt"
+right_file = "Right Medial GRF.txt"
+norm_file = "Norm GRF Y.txt"
+y_axis = [-0.1, 0.1]
+y_label = "Force, N/BW"
+x_label = "Stance phase, %"
+
+[[kinetics]]
+name = "Vertical GRF"
+left_file = "Left Vertical GRF.txt"
+right_file = "Right Vertical GRF.txt"
+norm_file = "Norm GRF Z.txt"
+y_axis = [-0.1, 2.0]
+y_label = "Force, N/BW"
+x_label = "Stance phase, %"
 
 [standard]
-layout = [
+layout_kinematics = [
     ["Pelvic Anterior Tilt", "Pelvic Up Obliquity", "Pelvic Internal Rotation"],
     ["Hip Flexion", "Hip Adduction", "Hip Internal Rotation"],
     ["Knee Flexion", "Knee Varus", "Knee Internal Rotation"],
     ["Ankle Dorsiflexion", "Ankle Inversion", "Ankle Rotation"],
     ["Foot Pitch", "", "Foot Internal Progression"]
+]
+layout_kinetics = [
+    ["Hip Extensor Moment", "Hip Valgus Moment", ""],
+    ["Knee Extensor Moment", "Knee Valgus Moment", ""],
+    ["Ankle Plantarflexor Moment", "Ankle Eversion Moment", ""],
+    ["Hip Sagittal Power Generation", "Hip Frontal Power Generation", ""],
+    ["Knee Sagittal Power Generation", "Knee Frontal Power Generation", ""],
+    ["Ankle Sagittal Power Generation", "Ankle Frontal Power Generation", ""],
+    ["Anterior GRF", "Medial GRF", "Vertical GRF"]
 ]
 
 [colors]
