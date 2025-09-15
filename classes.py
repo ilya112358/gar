@@ -531,31 +531,36 @@ class Figure:
 class Plot:
     """Individual parameter plot"""
 
-    def __init__(self, dataset_key: str):
+    def __init__(self, dataset_key: str, domain: str = "kinematics"):
         self.d = st.session_state[dataset_key]  # DataSet
-        self.config_key = f"{dataset_key}_Plot" # "d1_Plot"
+        self.domain = domain
+        self.data_dict = getattr(self.d, self.domain)         # d.kinematics or d.kinetics
+        self.config_key = f"{dataset_key}_{self.domain}_Plot" # "d1_kinematics_Plot"
         # Initialize or load self.state
-        if self.config_key not in st.session_state["plot_configs"]:
-            st.session_state["plot_configs"][self.config_key] = {
-                "selected_param": None,
-            }
+        st.session_state.setdefault("plot_configs", {})
+        st.session_state["plot_configs"].setdefault(self.config_key, {"selected_param": None})            
         self.state = st.session_state["plot_configs"][self.config_key]
         # Use persistent selected_param or default to first option
         default_idx = 0
-        if self.state["selected_param"] and self.state["selected_param"] in self.d.kinematics:
-            default_idx = list(self.d.kinematics.keys()).index(self.state["selected_param"])        
+        if self.state["selected_param"] and self.state["selected_param"] in self.data_dict:
+            default_idx = list(self.data_dict.keys()).index(self.state["selected_param"])        
+
+        def _on_change():
+            self.state["selected_param"] = st.session_state[f"{self.config_key}_param_select"]
+
         param2plot = st.selectbox(
-            "You can choose one parameter to plot", 
-            tuple(self.d.kinematics.keys()),
+            f"You can choose one {self.domain[:-1]} parameter to plot", 
+            tuple(self.data_dict.keys()),
             index=default_idx,
-            key=f"{self.config_key}_param_select"            
+            key=f"{self.config_key}_param_select",
+            on_change=_on_change,          
         )
         # Update state when parameter changes
         if param2plot != self.state["selected_param"]:
             self.state["selected_param"] = param2plot
         # Plot and show stats and comments
         if param2plot is not None:
-            dfs = self.d.kinematics[param2plot]
+            dfs = self.data_dict[param2plot]
             self.plot(param2plot, dfs)
             self.showstats(param2plot, dfs)
 
@@ -563,7 +568,7 @@ class Plot:
         st.markdown(f"### {bioparameter}")
         opts = ["Left", "Right", "Both"]
         foot2plot = st.radio(f"Show plot for {bioparameter}", opts, horizontal=True, index=2)
-        fig = Figure(y_axis=dfs["y_axis"], y_label=dfs["y_label"])
+        fig = Figure(y_axis=dfs["y_axis"], y_label=dfs["y_label"], x_label=dfs["x_label"])
         labels = []
         df = dfs[{"Left": "df_left", "Right": "df_right", "Both": "df_both"}[foot2plot]]
         palette = viridis(len(df.columns) - 3)  # -(1st, Static, Mean)

@@ -37,7 +37,7 @@ def home():
     st.write("- Kinematics")
     st.write("⏱ For the moment, the comparison page functionality is limited")
     st.write("Write your reactions to ilya112358@gmail.com or visit GitHub repo https://github.com/ilya112358/gar")
-    st.write("*(version 2025.08)*")
+    st.write("*(version 2025.09)*")
 
 def measurement(m):
     st.header(m["title"])
@@ -124,6 +124,31 @@ def measurement(m):
             st.subheader("Summary Grid")
             PlotLayout(st.session_state[m["dataset"]], "kinetics")
             st.write(m["link_top"])
+
+            @st.fragment
+            def individual_plot_kinetics():
+                st.subheader("Interactive Plots")
+                Plot(m["dataset"], domain="kinetics")
+                st.write(m["link_top"])
+
+                def get_export_data(dataset_key, domain):
+                    key = f"{dataset_key}_{domain}_Plot"
+                    if key in st.session_state.get("plot_configs", {}):
+                        return st.session_state["plot_configs"][key].get("add_to_rep", {})
+                    return {}
+
+                report_bytes = Export.to_bytes(
+                    dataset=st.session_state[m["dataset"]],
+                    stats_map=get_export_data(m["dataset"], "kinetics")
+                )
+                st.download_button(
+                    label="Download report.xlsx",
+                    data=report_bytes,
+                    file_name="report.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+            individual_plot_kinetics()
         else:
             st.subheader("🚧👷‍♂️ Under construction!")
 
